@@ -1,0 +1,5 @@
+[WINDOW]
+resolution = [1280,720]
+title = "Window"
+GLversion = [4,6]
+resizable = true
