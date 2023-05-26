@@ -10,6 +10,7 @@ uniform int geometryPixelCount;
 
 uniform int sphereCount;
 uniform int cubeCount;
+uniform int cylinderCount;
 
 
 //STRUCTS
@@ -52,17 +53,57 @@ vec2 boxIntersection( in vec3 ro, in vec3 rd, vec3 boxSize, out vec3 outNormal )
     outNormal *= -sign(rd);
     return vec2( tN, tF );
 }
+
+// cylinder defined by extremes a and b, and radious ra
+vec4 cylIntersect( in vec3 ro, in vec3 rd, in vec3 a, in vec3 b, float ra )
+{
+    vec3  ba = b  - a;
+    vec3  oc = ro - a;
+    float baba = dot(ba,ba);
+    float bard = dot(ba,rd);
+    float baoc = dot(ba,oc);
+    float k2 = baba            - bard*bard;
+    float k1 = baba*dot(oc,rd) - baoc*bard;
+    float k0 = baba*dot(oc,oc) - baoc*baoc - ra*ra*baba;
+    float h = k1*k1 - k2*k0;
+    if( h<0.0 ) return vec4(-1.0);//no intersection
+    h = sqrt(h);
+    float t = (-k1-h)/k2;
+    // body
+    float y = baoc + t*bard;
+    if( y>0.0 && y<baba ) return vec4( t, (oc+t*rd - ba*y/baba)/ra );
+    // caps
+    t = ( ((y<0.0) ? 0.0 : baba) - baoc)/bard;
+    if( abs(k1+k2*t)<h )
+    {
+        return vec4( t, ba*sign(y)/sqrt(baba) );
+    }
+    return vec4(-1.0);//no intersection
+}
+
+// normal at point p of cylinder (a,b,ra), see above
+vec3 cylNormal( in vec3 p, in vec3 a, in vec3 b, float ra )
+{
+    vec3  pa = p - a;
+    vec3  ba = b - a;
+    float baba = dot(ba,ba);
+    float paba = dot(pa,ba);
+    float h = dot(pa,ba)/baba;
+    return (pa - ba*h)/ra;
+}
 //UTILITY
 vec4 raycast( in vec3 ro, in vec3 rd, in sampler2D geometryTexture ){
 
     float minDist = 99999;
 
     int cubeID = 0;
+    int cylinderID = 1;
     vec3 normal;
     vec3 tempNormal;
 
     struct Material hitMaterial;
     vec2 hitObjID; //x=type,y=geometryIndex
+    
 
     for (int geometryIndex=0; geometryIndex<geometryCount; geometryIndex++){
         if (geometryIndex < sphereCount){
@@ -72,7 +113,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, in sampler2D geometryTexture ){
             if (intersectionResult.x > 0 && minDist > intersectionResult.x){
                 minDist = intersectionResult.x;
             }
-        } else if (geometryIndex < cubeCount+sphereCount){
+        } else if (geometryIndex < (cubeCount+sphereCount)){
             float geometryPixel  = float(geometryIndex+0.5+cubeID) / geometryPixelCount;
             float geometryPixel1 = float(geometryIndex+1.5+cubeID) / geometryPixelCount;
 
@@ -85,6 +126,19 @@ vec4 raycast( in vec3 ro, in vec3 rd, in sampler2D geometryTexture ){
                 normal = tempNormal;
             }
             cubeID++;
+        } else if (geometryIndex < sphereCount+cubeCount+cylinderCount){
+            float geometryPixel  = float(geometryIndex+0.5+cylinderID) / geometryPixelCount;
+            float geometryPixel1 = float(geometryIndex+1.5+cylinderID) / geometryPixelCount;
+            //(-0.3,-0.5,-1.1), (-0.3,0.2,-1.9), 0.2
+            vec3 posA    = texture(geometryTexture, vec2(geometryPixel, 0)).xyz;//vec3(-0.3,-0.5,-1.1);
+            vec3 posB    = texture(geometryTexture, vec2(geometryPixel1, 0)).xyz;//vec3(-0.3,0.2,-1.9);
+            float radius = texture(geometryTexture, vec2(geometryPixel, 0)).w;//0.2
+            vec4 intersectionResult = cylIntersect( ro, rd, posA, posB, radius );
+            if (intersectionResult.x > 0.0 && intersectionResult.x < minDist){
+                minDist = intersectionResult.x;
+                normal = intersectionResult.yzw;
+            }  
+            cylinderID++; 
         }
         
         
@@ -110,6 +164,8 @@ void main()
     struct Ray ray;
     ray.origin = vec3(-5,0,0);
     ray.direction = normalize( vec3( 1, norm_uv ) );
-    vec4 hitColor = raycast( ray.origin, ray.direction, geometryTexture );
+    float a = float(3+0.5+1) / geometryPixelCount;
+    float b = float(3+1.5+1) / geometryPixelCount;
+    vec4 hitColor = raycast( ray.origin, ray.direction, geometryTexture );//texture(geometryTexture, vec2(b, 0));
     fragColor = vec4(hitColor.rgb,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
 }

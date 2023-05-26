@@ -20,6 +20,9 @@ class Scene:
     def addCube( self, pos, size ):
         self.objects["cubes"].append([pos,size])
     
+    def addCylinder( self, posA, posB, radius ):
+        self.objects["cylinders"].append([posA,posB,radius])
+    
     def packObjects( self ):
         dataGeometry = b''
         for category in self.objects:
@@ -49,6 +52,20 @@ class Scene:
                             + struct.pack("f", 0)       # A (filler)
                         )
 
-                    case "cylinders": ...
+                    case "cylinders":
+                        posAx,posAy,posAz = object[0]
+                        posBx,posBy,posBz = object[1]
+                        radius            = object[2]
+                        dataGeometry += (               # Pixel
+                              struct.pack("f", posAx)    # R
+                            + struct.pack("f", posAy)    # G
+                            + struct.pack("f", posAz)    # B
+                            + struct.pack("f", radius)       # A (filler)
+                            + struct.pack("f", posBx)   # R
+                            + struct.pack("f", posBy)   # G
+                            + struct.pack("f", posBz)   # B
+                            + struct.pack("f", 0)       # A (filler)
+                        )
+
         
         return dataGeometry

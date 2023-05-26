@@ -58,7 +58,8 @@ class App( mglw.WindowConfig ):
         self.scene = Scene()
         self.scene.addSphere( (0,0,0), 0.5)
         self.scene.addSphere( (0,0,1), 0.4)
-        self.scene.addCube( (0,1,0), (0.5,0.5,0.5))
+        self.scene.addCube( (0,1,0), (0.5,0.5,0.5) )
+        self.scene.addCylinder((-0.3,-0.5,-1.1), (-0.3,0.2,-1.9), 0.2)
         geometryData = self.scene.packObjects()
         pixelCount = self.scene.getObjectCount( inPixels=True )
         geometryCount = self.scene.getObjectCount()
@@ -68,8 +69,11 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "RT", "geometryPixelCount", pixelCount )
         sphereCount = self.scene.getObjectCount( countCategory="spheres" )
         cubeCount = self.scene.getObjectCount( countCategory="cubes" )
+        cylinderCount = self.scene.getObjectCount( countCategory="cylinders" )
+        print(f"Sphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount}; pixelCount: {pixelCount}")
         self.set_uniform( "RT", "sphereCount", sphereCount )
         self.set_uniform( "RT", "cubeCount", cubeCount )
+        self.set_uniform( "RT", "cylinderCount", cylinderCount )
 
     def initUniforms( self ):
         self.set_uniform( "pygameBlit", "pgTexture", 0 )
