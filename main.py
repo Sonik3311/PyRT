@@ -56,21 +56,31 @@ class App( mglw.WindowConfig ):
 
     def initScene( self ):
         self.scene = Scene()
-        self.scene.addSphere( (0,0,0), 0.5)
-        self.scene.addSphere( (0,0,1), 0.4)
-        self.scene.addCube( (0,1,0), (0.5,0.5,0.5) )
-        self.scene.addCylinder((-0.3,-0.5,-1.1), (-0.3,0.2,-1.9), 0.2)
-        geometryData = self.scene.packObjects()
-        pixelCount = self.scene.getObjectCount( inPixels=True )
+        self.scene.addSphere( (0,-1.5,-0.6), 0.5, (1,0,0),(1,1,1),(1,1,1))
+        self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.5,0,0),(1,1,1),(1,1,1))
+        self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0,1,0),(1,1,1),(1,1,1) )
+        self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0,0.5,0),(1,1,1),(1,1,1) )
+        self.scene.addCylinder((0.2, 2, 0.3), (0, 1, 0.9), 0.25, (0,0,1),(1,1,1),(1,1,1))
+        self.scene.addCylinder((0, 2, -0.3), (0.2, 1, -0.9), 0.25, (0,0,0.5),(1,1,1),(1,1,1))
+
+        geometryData, materialData = self.scene.packObjects()
+
+        geometryPixelCount = self.scene.getObjectCount( inPixels=True )
+        materialPixelCount = self.scene.getMaterialPixelCount()
         geometryCount = self.scene.getObjectCount()
-        self.geometryTexture = self.ctx.texture( ( pixelCount ,1 ), 4, dtype="f4" )
-        self.geometryTexture.write( geometryData )
+
+        self.geometryTexture = self.ctx.texture((geometryPixelCount, 1), components=4, dtype="f4" )
+        self.geometryTexture.write(geometryData)
+        self.materialTexture = self.ctx.texture((materialPixelCount, 1), components=4, dtype="f4" )
+        self.materialTexture.write(materialData)
+
+
         self.set_uniform( "RT", "geometryCount", geometryCount )
-        self.set_uniform( "RT", "geometryPixelCount", pixelCount )
+        self.set_uniform( "RT", "geometryPixelCount", geometryPixelCount )
         sphereCount = self.scene.getObjectCount( countCategory="spheres" )
         cubeCount = self.scene.getObjectCount( countCategory="cubes" )
         cylinderCount = self.scene.getObjectCount( countCategory="cylinders" )
-        print(f"Sphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount}; pixelCount: {pixelCount}")
+        print(f"\nSphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount};\ngeometryPixelCount: {geometryPixelCount}; materialPixelCount: {materialPixelCount}\n")
         self.set_uniform( "RT", "sphereCount", sphereCount )
         self.set_uniform( "RT", "cubeCount", cubeCount )
         self.set_uniform( "RT", "cylinderCount", cylinderCount )
@@ -85,6 +95,9 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "RT", "geometryTexture", 2)
         self.geometryTexture.use( location=2 )
 
+        self.set_uniform( "RT", "materialTexture", 3)
+        self.materialTexture.use( location=3 )
+
         self.set_uniform( "RT", "u_resolution", (self.window_size[0],self.window_size[1]) )
         
 
@@ -94,7 +107,7 @@ class App( mglw.WindowConfig ):
     def render( self, time: float, delta_time: float ):
         #Render pygame
         self.pgSurface.fill( (0,0,0,0) )
-        pg.draw.rect( self.pgSurface, (255,21,255,255), (200,200,200,200))
+        pg.draw.rect( self.pgSurface, (255,21,255,255), (0,self.window_size[1]-20,self.window_size[0],20))
 
         self.pgTexture.write( self.pgSurface.get_view('1') )
 
@@ -110,7 +123,7 @@ class App( mglw.WindowConfig ):
         try:
             self.shaders.programs[shader_name][uniform_name] = value
         except KeyError:
-            print(f"{colors.WARNING}Warning{colors.ENDC} - uniform path [{shader_name}][{uniform_name}] not defined in shader!")
+            print(f"{colors.WARNING}Warning{colors.ENDC} - uniform path {colors.OKBLUE}[{shader_name}]{colors.OKCYAN}[{uniform_name}]{colors.ENDC} is not defined in the shader!")
 
 
     

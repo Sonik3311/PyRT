@@ -13,59 +13,40 @@ class Scene:
         objects = self.objects if countCategory is None else {countCategory: self.objects[countCategory]}
 
         return sum([len(objects[category]) * lengths[category] if inPixels else len(objects[category]) for category in objects])
+    
+    def getMaterialPixelCount( self ):
+         return sum([len(self.objects[category]) * 3 for category in self.objects])
 
-    def addSphere( self, pos, radius ):
-        self.objects["spheres"].append([pos,radius])
+    def addSphere( self, pos,radius,  color,specColor,RME):
+        self.objects["spheres"].append([pos,radius, color,specColor,RME])
     
-    def addCube( self, pos, size ):
-        self.objects["cubes"].append([pos,size])
+    def addCube( self, pos,size, color,specColor,RME):
+        self.objects["cubes"].append([pos,size, color,specColor,RME])
     
-    def addCylinder( self, posA, posB, radius ):
-        self.objects["cylinders"].append([posA,posB,radius])
+    def addCylinder( self, posA,posB,radius, color,specColor,RME):
+        self.objects["cylinders"].append([posA,posB,radius, color,specColor,RME])
     
     def packObjects( self ):
         dataGeometry = b''
+        dataMaterial = b''
+        shapes = {
+            "spheres":   lambda object: (object[0][0], object[0][1], object[0][2], object[1]),
+
+            "cubes":     lambda object: (object[0][0], object[0][1], object[0][2], 0, 
+                                         object[1][0], object[1][1], object[1][2], 0),
+
+            "cylinders": lambda object: (object[0][0], object[0][1], object[0][2], object[2], 
+                                         object[1][0], object[1][1], object[1][2], 0)
+        }
+        material = lambda material: (object[-3:-2][0][0], object[-3:-2][0][1], object[-3:-2][0][2], 0, # color
+                                     object[-2:-1][0][0], object[-2:-1][0][1], object[-2:-1][0][2], 0, # specular color
+                                     object[-1:][0][0],   object[-1:][0][1],   object[-1:][0][2]  , 0, # roughness metalness emissive
+        )
         for category in self.objects:
-            for object in self.objects[category]:
-                match category:
-                    case "spheres":
-                        #print(object)
-                        posx,posy,posz = object[0]
-                        radius         = object[1]
-                        dataGeometry += (               # Pixel
-                              struct.pack("f", posx)    # R
-                            + struct.pack("f", posy)    # G
-                            + struct.pack("f", posz)    # B
-                            + struct.pack("f", radius)  # A
-                        )
-                    case "cubes":
-                        posx,posy,posz    = object[0]
-                        sizex,sizey,sizez = object[1]
-                        dataGeometry += (               # Pixel
-                              struct.pack("f", posx)    # R
-                            + struct.pack("f", posy)    # G
-                            + struct.pack("f", posz)    # B
-                            + struct.pack("f", 0)       # A (filler)
-                            + struct.pack("f", sizex)   # R
-                            + struct.pack("f", sizey)   # G
-                            + struct.pack("f", sizez)   # B
-                            + struct.pack("f", 0)       # A (filler)
-                        )
+            if category in shapes:
+                format_string = f"{len(shapes[category](self.objects[category][0]))}f"
+                for object in self.objects[category]:
+                    dataGeometry += struct.pack(format_string, *shapes[category](object))
+                    dataMaterial += struct.pack("12f", *material(object))
 
-                    case "cylinders":
-                        posAx,posAy,posAz = object[0]
-                        posBx,posBy,posBz = object[1]
-                        radius            = object[2]
-                        dataGeometry += (               # Pixel
-                              struct.pack("f", posAx)    # R
-                            + struct.pack("f", posAy)    # G
-                            + struct.pack("f", posAz)    # B
-                            + struct.pack("f", radius)       # A (filler)
-                            + struct.pack("f", posBx)   # R
-                            + struct.pack("f", posBy)   # G
-                            + struct.pack("f", posBz)   # B
-                            + struct.pack("f", 0)       # A (filler)
-                        )
-
-        
-        return dataGeometry
+        return dataGeometry, dataMaterial

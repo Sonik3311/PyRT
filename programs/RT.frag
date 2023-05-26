@@ -5,6 +5,7 @@ out vec4 fragColor;
 
 uniform vec2 u_resolution;
 uniform sampler2D geometryTexture;
+uniform sampler2D materialTexture;
 uniform int geometryCount;
 uniform int geometryPixelCount;
 
@@ -20,6 +21,7 @@ struct rayStruct{
 };
 struct materialStruct{
     vec3 albedo;
+    vec3 specularColor;
     float roughness;
     float metallness;
     float emissive;
@@ -92,58 +94,80 @@ vec3 cylNormal( in vec3 p, in vec3 a, in vec3 b, float ra )
     return (pa - ba*h)/ra;
 }
 //UTILITY
-vec4 raycast( in vec3 ro, in vec3 rd, in sampler2D geometryTexture ){
+vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 hitpoint, out vec3 hitNormal ){
 
     float minDist = 99999;
-
-    int cubeID = 0;
-    int cylinderID = 1;
-    vec3 normal;
     vec3 tempNormal;
 
-    struct materialStruct hitMaterial;
-    vec2 hitObjID; //x=type,y=geometryIndex
+    int materialPixelCount = geometryCount * 3;
+    vec3 hitObjID; //x=type,y=geometryIndex,z=pixelIndex
     
-
+    int pixelIndex = 0;
     for (int geometryIndex=0; geometryIndex<geometryCount; geometryIndex++){
         if (geometryIndex < sphereCount){
-            float geometryPixelUV = float(geometryIndex+0.5) / geometryPixelCount;
-            vec4 sphere = texture(geometryTexture, vec2(geometryPixelUV,0));
-            vec2 intersectionResult = sphIntersect( ro-sphere.xyz, rd, sphere.w );
-            if (intersectionResult.x > 0 && minDist > intersectionResult.x){
-                minDist = intersectionResult.x;
+            vec2 geometryUV = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
+            vec4 sphere = texture(geometryTexture, geometryUV);
+            vec2 intersection = sphIntersect(ro-sphere.xyz, rd, sphere.w);
+            if (intersection.x > 0 && minDist > intersection.x){
+                hitpoint = ro + rd*intersection.x;
+                hitNormal = normalize(hitpoint-sphere.xyz);
+                minDist = intersection.x;
+                hitObjID.x = 1;
+                hitObjID.y = geometryIndex;
+                hitObjID.z = pixelIndex;
             }
-        } else if (geometryIndex < (cubeCount+sphereCount)){
-            float geometryPixel  = float(geometryIndex+0.5+cubeID) / geometryPixelCount;
-            float geometryPixel1 = float(geometryIndex+1.5+cubeID) / geometryPixelCount;
+            pixelIndex += 1;
+        } else if (sphereCount <= geometryIndex && geometryIndex < (sphereCount + cubeCount)){
+            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
+            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
 
-            vec3 pos   = texture(geometryTexture, vec2(geometryPixel, 0)).xyz;
-            vec3 scale = texture(geometryTexture, vec2(geometryPixel1, 0)).xyz;
-            
-            vec2 intersectionResult = boxIntersection(ro - pos, rd, scale, tempNormal);
-            if (intersectionResult.x > 0.0 && intersectionResult.x < minDist){
-                minDist = intersectionResult.x;
-                normal = tempNormal;
+            vec3 pos  = texture(geometryTexture, geometryUV1).xyz;
+            vec3 size = texture(geometryTexture, geometryUV2).xyz;
+
+            vec2 intersection = boxIntersection(ro - pos, rd, size, tempNormal);
+            if (intersection.x > 0.0 && intersection.x < minDist){
+                hitpoint = ro + rd*intersection.x;
+                minDist = intersection.x;
+                hitNormal = tempNormal;
+                hitObjID.x = 2;
+                hitObjID.y = geometryIndex;
+                hitObjID.z = pixelIndex;
             }
-            cubeID++;
-        } else if (geometryIndex < sphereCount+cubeCount+cylinderCount){
-            float geometryPixel  = float(geometryIndex+0.5+cylinderID) / geometryPixelCount;
-            float geometryPixel1 = float(geometryIndex+1.5+cylinderID) / geometryPixelCount;
-            //(-0.3,-0.5,-1.1), (-0.3,0.2,-1.9), 0.2
-            vec3 posA    = texture(geometryTexture, vec2(geometryPixel, 0)).xyz;//vec3(-0.3,-0.5,-1.1);
-            vec3 posB    = texture(geometryTexture, vec2(geometryPixel1, 0)).xyz;//vec3(-0.3,0.2,-1.9);
-            float radius = texture(geometryTexture, vec2(geometryPixel, 0)).w;//0.2
-            vec4 intersectionResult = cylIntersect( ro, rd, posA, posB, radius );
-            if (intersectionResult.x > 0.0 && intersectionResult.x < minDist){
-                minDist = intersectionResult.x;
-                normal = intersectionResult.yzw;
-            }  
-            cylinderID++; 
-        }
-        
-        
+            pixelIndex += 2;
+        } else if ((sphereCount + cubeCount) <= geometryIndex && geometryIndex < (sphereCount + cubeCount + cylinderCount)){
+            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
+            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
+            
+            vec3 posA = texture(geometryTexture, geometryUV1).xyz;
+            vec3 posB = texture(geometryTexture, geometryUV2).xyz;
+            float radius = texture(geometryTexture, geometryUV1).w;
+
+            vec4 intersection = cylIntersect( ro, rd, posA, posB, radius );
+            if (intersection.x > 0.0 && intersection.x < minDist){
+                hitpoint = ro + rd*intersection.x;
+                minDist = intersection.x;
+                hitNormal = intersection.yzw;
+                hitObjID.x = 3;
+                hitObjID.y = geometryIndex;
+                hitObjID.z = pixelIndex;
+            }
+            pixelIndex += 2;
+        }     
     }
     if (minDist < 99999){
+        vec2 materialUV1 = vec2(float(hitObjID.y*3+0.5) / materialPixelCount);
+        vec2 materialUV2 = vec2(float(hitObjID.y*3+1.5) / materialPixelCount);
+        vec2 materialUV3 = vec2(float(hitObjID.y*3+2.5) / materialPixelCount);
+
+        vec4 materialPixel1 = texture(materialTexture, materialUV1);
+        vec4 materialPixel2 = texture(materialTexture, materialUV2);
+        vec4 materialPixel3 = texture(materialTexture, materialUV3);
+
+        hitMaterial.albedo = materialPixel1.rgb;
+        hitMaterial.specularColor = materialPixel2.rgb;
+        hitMaterial.roughness = materialPixel3.r;
+        hitMaterial.metallness = materialPixel3.g;
+        hitMaterial.emissive = materialPixel3.b;
         return vec4(1);
     }
     return vec4(0);
@@ -162,10 +186,15 @@ void main()
     vec2 norm_uv = (v_uv.xy-0.5)*aspect_ratio;
     
     struct rayStruct ray;
-    ray.origin = vec3(-5,0,0);
-    ray.direction = normalize( vec3( 1, norm_uv ) );
-    float a = float(3+0.5+1) / geometryPixelCount;
-    float b = float(3+1.5+1) / geometryPixelCount;
-    vec4 hitColor = raycast( ray.origin, ray.direction, geometryTexture );//texture(geometryTexture, vec2(b, 0));
-    fragColor = vec4(hitColor.rgb,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
+    ray.origin = vec3(5,0,0);
+    ray.direction = normalize( vec3( -1, norm_uv ) );
+    struct materialStruct hitMaterial;
+    vec3 hitnormal;
+    vec3 hitpoint;
+    vec4 hit = raycast( ray.origin, ray.direction, hitMaterial, hitpoint, hitnormal);//texture(geometryTexture, vec2(b, 0));
+    vec3 hitColor = vec3(0);
+    if (hit.x > 0){
+        hitColor = hitnormal;
+    }
+    fragColor = vec4(hitColor,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
 }
