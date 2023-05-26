@@ -9,6 +9,7 @@ uniform sampler2D materialTexture;
 uniform sampler2D skybox;
 uniform int geometryCount;
 uniform int geometryPixelCount;
+uniform int skyboxType;
 
 uniform int sphereCount;
 uniform int cubeCount;
@@ -95,7 +96,7 @@ vec3 cylNormal( in vec3 p, in vec3 a, in vec3 b, float ra )
     return (pa - ba*h)/ra;
 }
 //UTILITY
-vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 hitpoint, out vec3 hitNormal ){
+bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 hitpoint, out vec3 hitNormal ){
 
     float minDist = 99999;
     vec3 tempNormal;
@@ -110,7 +111,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
             vec4 sphere = texture(geometryTexture, geometryUV);
             vec2 intersection = sphIntersect(ro-sphere.xyz, rd, sphere.w);
             if (intersection.x > 0 && minDist > intersection.x){
-                hitpoint = ro + rd*intersection.x;
+                hitpoint = ro + rd*(intersection.x - 0.0001);
                 hitNormal = normalize(hitpoint-sphere.xyz);
                 minDist = intersection.x;
                 hitObjID.x = 1;
@@ -127,7 +128,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
 
             vec2 intersection = boxIntersection(ro - pos, rd, size, tempNormal);
             if (intersection.x > 0.0 && intersection.x < minDist){
-                hitpoint = ro + rd*intersection.x;
+                hitpoint = ro + rd*(intersection.x - 0.0001);
                 minDist = intersection.x;
                 hitNormal = tempNormal;
                 hitObjID.x = 2;
@@ -145,7 +146,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
 
             vec4 intersection = cylIntersect( ro, rd, posA, posB, radius );
             if (intersection.x > 0.0 && intersection.x < minDist){
-                hitpoint = ro + rd*intersection.x;
+                hitpoint = ro + rd*(intersection.x - 0.0001);
                 minDist = intersection.x;
                 hitNormal = intersection.yzw;
                 hitObjID.x = 3;
@@ -169,21 +170,51 @@ vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
         hitMaterial.roughness = materialPixel3.r;
         hitMaterial.metallness = materialPixel3.g;
         hitMaterial.emissive = materialPixel3.b;
-        return vec4(1);
+        return true;
     }
-    return vec4(0);
+    return false;
 }
 
 
 const float PI = 3.14159265;
 
 vec3 getSkyboxColor( in vec3 rd ){
-    //vec2 uv = vec2(0.5+(atan(rd.x, rd.z)*2)/(PI*2), 0.5+asin(rd.y)/PI);
-    //uv /= 3.14159265;
-    vec3 col = texture(skybox, vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI)).xyz;
+    vec3 col;
+    if (skyboxType == 0){
+        vec2 uv = vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI);
+        col = vec3(max(sin(uv.x*100)*100 * cos(uv.y*100)*100,0), 0, max(sin(uv.x*100)*100 * cos(uv.y*100)*100,0)); 
+    } else if (skyboxType == 1) {
+        col = texture(skybox, vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI)).xyz;
+    }
     return col;
 }
 
+vec3 rayTraceSample( in rayStruct ray ){
+    vec3 color = vec3(0);
+    vec3 rayColor = vec3(1);
+    struct rayStruct duplicateRay;
+    duplicateRay.origin = ray.origin;
+    duplicateRay.direction = ray.direction;
+    int depth = 0;
+    int maxRelfections = 16;
+    struct materialStruct hitMaterial;
+    for (int relfections=0; relfections<maxRelfections; relfections++){
+        vec3 hitpoint;
+        vec3 hitnormal;
+        bool raycastResult = raycast( duplicateRay.origin, duplicateRay.direction, hitMaterial, hitpoint, hitnormal );
+        if (raycastResult == false){ //no hit
+            color += getSkyboxColor(duplicateRay.direction) * rayColor;
+            break;
+        }
+        color += 0;
+        color = hitMaterial.albedo;
+        rayColor *= hitMaterial.albedo;
+
+        duplicateRay.origin = hitpoint;
+        duplicateRay.direction = reflect(duplicateRay.direction, hitnormal);
+    }
+    return color;
+}
 
 
 //MAIN
@@ -195,15 +226,16 @@ void main()
     struct rayStruct ray;
     ray.origin = vec3(-5,0,0);
     ray.direction = normalize( vec3( 1,norm_uv.yx ) );
-    struct materialStruct hitMaterial;
-    vec3 hitnormal;
-    vec3 hitpoint;
-    vec4 hit = raycast( ray.origin, ray.direction, hitMaterial, hitpoint, hitnormal);//texture(geometryTexture, vec2(b, 0));
-    vec3 hitColor = vec3(0);
-    if (hit.x > 0){
-        hitColor = hitnormal;
-    } else {
-        hitColor = getSkyboxColor(ray.direction); 
-    }
-    fragColor = vec4(hitColor,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
+
+    struct materialStruct mat;
+    vec3 hitn;
+    vec3 hitp;
+    //vec3 color = rayTraceSample(ray);
+    //bool hit = raycast(ray.origin,ray.direction, mat, hitp, hitn);
+    //vec3 color = getSkyboxColor(ray.direction);
+    //if (hit == true){
+    //    color = mat.albedo;
+    //}
+    vec3 color = rayTraceSample(ray);
+    fragColor = vec4(color,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
 }

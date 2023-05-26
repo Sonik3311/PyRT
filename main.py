@@ -64,17 +64,20 @@ class App( mglw.WindowConfig ):
         if skyboxPath != "":
             skybox = pg.image.load(skyboxPath)
             self.skyboxTexture = self.ctx.texture(size=skybox.get_size(), components=3, data=pg.image.tostring(skybox, 'RGB'))
+            self.set_uniform("RT", "skyboxType", 1)
         else:
-            self.skyboxTexture = self.ctx.texture(size=(128,128), components=3, data=b'\x55'*3*128*128)
+            self.skyboxTexture = self.ctx.texture(size=(128,128), components=3, data=b'\xff\x00\xff\x00\x00\x00'*128*64)
+            self.set_uniform("RT", "skyboxType", 0)
+
         self.set_uniform( "RT", "skybox", 4)
         self.skyboxTexture.use(location=4)
 
-        self.scene.addSphere( (0,-1.5,-0.6), 0.5, (1,0,0),(1,1,1),(1,1,1))
-        self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.5,0,0),(1,1,1),(1,1,1))
-        self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0,1,0),(1,1,1),(1,1,1) )
-        self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0,0.5,0),(1,1,1),(1,1,1) )
-        self.scene.addCylinder((0.2, 2, 0.3), (0, 1, 0.9), 0.25, (0,0,1),(1,1,1),(1,1,1))
-        self.scene.addCylinder((0, 2, -0.3), (0.2, 1, -0.9), 0.25, (0,0,0.5),(1,1,1),(1,1,1))
+        self.scene.addSphere( (0,-1.5,-0.6), 0.5, (1,0.2,0.2),(1,1,1),(1,1,1))
+        self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.5,0.2,0.2),(1,1,1),(1,1,1))
+        self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0.2,1,0.2),(1,1,1),(1,1,1) )
+        self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0.2,0.5,0.2),(1,1,1),(1,1,1) )
+        self.scene.addCylinder((0, 2, 0.3), (0, 1, 0.9), 0.25, (0.2,0.2,1),(1,1,1),(1,1,1))
+        self.scene.addCylinder((0, 2, -0.3), (0, 1, -0.9), 0.25, (0.2,0.2,0.5),(1,1,1),(1,1,1))
 
         geometryData, materialData = self.scene.packObjects()
 
