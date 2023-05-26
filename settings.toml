@@ -6,4 +6,4 @@ resizable = true
 
 [SCENE]
 scenefile = ""
-skyboxfile = ""
+skyboxfile = "./skybox.jpg"

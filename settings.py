@@ -1,6 +1,6 @@
 import toml
 import re
-from termcolor import colored
+from coloredText import bcolors as colors
 
 class TOMLParser():
     tomlFiles = {}
@@ -18,7 +18,7 @@ class TOMLParser():
             try:
                 value = value[folder]
             except KeyError:
-                print( f"TOMLParser KeyError: path [{name}] doesn't exist!")
+                print( f"{colors.HEADER}TOMLParser - {colors.WARNING}KeyError:{colors.ENDC} path {colors.OKBLUE}[{filename}]{colors.OKCYAN}[{name}]{colors.ENDC} doesn't exist!")
                 return None
         #print('\x1b[6;30;42m' + 'Success!' + '\x1b[0m')
         return value

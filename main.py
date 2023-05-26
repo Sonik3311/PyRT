@@ -56,6 +56,19 @@ class App( mglw.WindowConfig ):
 
     def initScene( self ):
         self.scene = Scene()
+
+        scenePath = self.TOMLParser.getValue( "settings", "SCENE/scenefile")
+        if scenePath != "":
+            pass
+        skyboxPath = self.TOMLParser.getValue( "settings", "SCENE/skyboxfile")
+        if skyboxPath != "":
+            skybox = pg.image.load(skyboxPath)
+            self.skyboxTexture = self.ctx.texture(size=skybox.get_size(), components=3, data=pg.image.tostring(skybox, 'RGB'))
+        else:
+            self.skyboxTexture = self.ctx.texture(size=(128,128), components=3, data=b'\x55'*3*128*128)
+        self.set_uniform( "RT", "skybox", 4)
+        self.skyboxTexture.use(location=4)
+
         self.scene.addSphere( (0,-1.5,-0.6), 0.5, (1,0,0),(1,1,1),(1,1,1))
         self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.5,0,0),(1,1,1),(1,1,1))
         self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0,1,0),(1,1,1),(1,1,1) )
@@ -80,10 +93,12 @@ class App( mglw.WindowConfig ):
         sphereCount = self.scene.getObjectCount( countCategory="spheres" )
         cubeCount = self.scene.getObjectCount( countCategory="cubes" )
         cylinderCount = self.scene.getObjectCount( countCategory="cylinders" )
-        print(f"\nSphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount};\ngeometryPixelCount: {geometryPixelCount}; materialPixelCount: {materialPixelCount}\n")
+        #print(f"\nSphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount};\ngeometryPixelCount: {geometryPixelCount}; materialPixelCount: {materialPixelCount}\n")
         self.set_uniform( "RT", "sphereCount", sphereCount )
         self.set_uniform( "RT", "cubeCount", cubeCount )
         self.set_uniform( "RT", "cylinderCount", cylinderCount )
+        
+        
 
     def initUniforms( self ):
         self.set_uniform( "pygameBlit", "pgTexture", 0 )
@@ -123,7 +138,7 @@ class App( mglw.WindowConfig ):
         try:
             self.shaders.programs[shader_name][uniform_name] = value
         except KeyError:
-            print(f"{colors.WARNING}Warning{colors.ENDC} - uniform path {colors.OKBLUE}[{shader_name}]{colors.OKCYAN}[{uniform_name}]{colors.ENDC} is not defined in the shader!")
+            print(f"{colors.HEADER}setUniform - {colors.WARNING}KeyError{colors.ENDC}: uniform {colors.OKBLUE}[{shader_name}]{colors.OKCYAN}[{uniform_name}]{colors.ENDC} is not used in the shader!")
 
 
     

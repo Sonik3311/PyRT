@@ -6,6 +6,7 @@ out vec4 fragColor;
 uniform vec2 u_resolution;
 uniform sampler2D geometryTexture;
 uniform sampler2D materialTexture;
+uniform sampler2D skybox;
 uniform int geometryCount;
 uniform int geometryPixelCount;
 
@@ -174,8 +175,14 @@ vec4 raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
 }
 
 
+const float PI = 3.14159265;
 
-
+vec3 getSkyboxColor( in vec3 rd ){
+    //vec2 uv = vec2(0.5+(atan(rd.x, rd.z)*2)/(PI*2), 0.5+asin(rd.y)/PI);
+    //uv /= 3.14159265;
+    vec3 col = texture(skybox, vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI)).xyz;
+    return col;
+}
 
 
 
@@ -186,8 +193,8 @@ void main()
     vec2 norm_uv = (v_uv.xy-0.5)*aspect_ratio;
     
     struct rayStruct ray;
-    ray.origin = vec3(5,0,0);
-    ray.direction = normalize( vec3( -1, norm_uv ) );
+    ray.origin = vec3(-5,0,0);
+    ray.direction = normalize( vec3( 1,norm_uv.yx ) );
     struct materialStruct hitMaterial;
     vec3 hitnormal;
     vec3 hitpoint;
@@ -195,6 +202,8 @@ void main()
     vec3 hitColor = vec3(0);
     if (hit.x > 0){
         hitColor = hitnormal;
+    } else {
+        hitColor = getSkyboxColor(ray.direction); 
     }
     fragColor = vec4(hitColor,1.0);//texture(geometryTexture, vec2(float(0+0.5)/geometryCount,0));//
 }
