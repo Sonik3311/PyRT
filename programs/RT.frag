@@ -14,11 +14,11 @@ uniform int cylinderCount;
 
 
 //STRUCTS
-struct Ray{
+struct rayStruct{
     vec3 origin;
     vec3 direction;
 };
-struct Material{
+struct materialStruct{
     vec3 albedo;
     float roughness;
     float metallness;
@@ -101,7 +101,7 @@ vec4 raycast( in vec3 ro, in vec3 rd, in sampler2D geometryTexture ){
     vec3 normal;
     vec3 tempNormal;
 
-    struct Material hitMaterial;
+    struct materialStruct hitMaterial;
     vec2 hitObjID; //x=type,y=geometryIndex
     
 
@@ -161,7 +161,7 @@ void main()
     vec2 aspect_ratio = u_resolution/u_resolution.y;
     vec2 norm_uv = (v_uv.xy-0.5)*aspect_ratio;
     
-    struct Ray ray;
+    struct rayStruct ray;
     ray.origin = vec3(-5,0,0);
     ray.direction = normalize( vec3( 1, norm_uv ) );
     float a = float(3+0.5+1) / geometryPixelCount;
