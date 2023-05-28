@@ -1,4 +1,5 @@
 glcontext==2.3.7
+imgui==2.0.0
 moderngl==5.8.2
 moderngl-window==2.4.4
 multipledispatch==0.6.0

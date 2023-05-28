@@ -3,7 +3,6 @@
 in vec2 v_uv;
 out vec4 fragColor;
 
-uniform sampler2D pgTexture;
 uniform sampler2D rtTexture;
 
 //----------------------------------------------------------------------------------------------------------
@@ -62,8 +61,6 @@ void main()
     vec3 rtColor = texture( rtTexture, v_uv ).rgb;
     rtColor *= c_exposure;
     rtColor = ACESFilm(rtColor);
-    rtColor = LinearToSRGB(rtColor);
-    vec4 pgColor = vec4( texture( pgTexture, v_uv ).rgba );
-    vec3 color = mix(rtColor.rgb, pgColor.rgb, pgColor.a);
-    fragColor = vec4( color, 1.0 );
+    rtColor = LinearToSRGB(rtColor);//mix(rtColor.rgb, pgColor.rgb, pgColor.a);
+    fragColor = vec4( rtColor, 1.0 );
 }

@@ -1,13 +1,18 @@
 import moderngl_window as mglw
 import moderngl as mgl
+import imgui
+from moderngl_window.integrations.imgui import ModernglWindowRenderer
+
 from settings import TOMLParser
 from VAO import VAO
 from scene import Scene
 from shader_program import ShaderProgram
-from pgRenderer import PygameRenderer
 from coloredText import bcolors as colors
+
 import pygame as pg
 from numpy.random import rand
+
+
 
 class App( mglw.WindowConfig ):
     TOMLParser = TOMLParser()
@@ -28,9 +33,8 @@ class App( mglw.WindowConfig ):
         self.initUniforms()
 
         self.frames = 0
-
-        pg.init()
-        self.pgRenderer = PygameRenderer(self.window_size)
+        imgui.create_context()
+        self.imgui = ModernglWindowRenderer(self.wnd)
 
     def initShaders( self):
         self.shaders = ShaderProgram( self.ctx, "programs" )
@@ -51,9 +55,6 @@ class App( mglw.WindowConfig ):
         )
 
     def initTextures( self ):
-        self.pgTexture = self.ctx.texture( self.window_size, components=4 )
-        self.pgTexture.filter = mgl.NEAREST, mgl.NEAREST
-
         self.RTRenderTEX = self.ctx.texture(self.window_size, components=4, dtype="f4")
         self.RTRenderFBO = self.ctx.framebuffer(
             self.RTRenderTEX, self.ctx.depth_renderbuffer( self.window_size )
@@ -115,9 +116,6 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "RT", "quadCount", quadCount)
 
     def initUniforms( self ):
-        self.set_uniform( "pygameBlit", "pgTexture", 0 )
-        self.pgTexture.use(location=0)
-
        
         self.set_uniform( "accumulator", "currentFrame", 1)
         self.RTRenderTEX.use(location=1)
@@ -135,8 +133,9 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "RT", "u_resolution", (self.window_size[0],self.window_size[1]) )
         
     def render( self, time: float, delta_time: float ):
-        self.pgRenderer.render()
-        self.pgTexture.write( self.pgRenderer.surface.get_view('1') )
+        #self.pgRenderer.render()
+        #pg.transform.scale_by(self.pgRenderer.surface, )
+        #self.pgTexture.write( self.pgRenderer.surface.get_view('1') )
 
         #Render modernGL
         #Render RT
@@ -150,8 +149,30 @@ class App( mglw.WindowConfig ):
         #Blit RT with pygame onto the screen
         self.ctx.screen.use()
         self.screenSurface.render()
+
+        #Render ImGUI
+        self.render_ui()
+
         self.frames += 1
     
+    def render_ui( self ):
+        imgui.new_frame()
+
+        #Render each Window
+        if imgui.begin("mainMenu"):
+            imgui.push_item_width(imgui.get_window_width() * 0.33)
+            changed,testVar = imgui.input_int(
+                "Test", 5, step=1024, step_fast=2**15
+            )
+            imgui.pop_item_width()
+
+        #if imgui.begin("Appearance"):
+        #    pass
+
+        imgui.end()
+        imgui.render()
+        self.imgui.render(imgui.get_draw_data())
+
     def set_uniform(self, shader_name, uniform_name, value):
         try:
             self.shaders.programs[shader_name][uniform_name] = value
@@ -166,21 +187,22 @@ class App( mglw.WindowConfig ):
         self.shaders.destroy()
     
     
-    def key_event(self, key, action, modifiers): ...
-
     def mouse_position_event(self, x, y, dx, dy):
-        print("Mouse position:", x, y, dx, dy)
+        self.imgui.mouse_position_event(x, y, dx, dy)
 
     def mouse_drag_event(self, x, y, dx, dy):
-        print("Mouse drag:", x, y, dx, dy)
+        self.imgui.mouse_drag_event(x, y, dx, dy)
 
-    def mouse_scroll_event(self, x_offset: float, y_offset: float):
-        print("Mouse wheel:", x_offset, y_offset)
+    def mouse_scroll_event(self, x_offset, y_offset):
+        self.imgui.mouse_scroll_event(x_offset, y_offset)
 
     def mouse_press_event(self, x, y, button):
-        print("Mouse button {} pressed at {}, {}".format(button, x, y))
+        self.imgui.mouse_press_event(x, y, button)
 
     def mouse_release_event(self, x: int, y: int, button: int):
-        print("Mouse button {} released at {}, {}".format(button, x, y))
+        self.imgui.mouse_release_event(x, y, button)
+
+    def unicode_char_entered(self, char):
+        self.imgui.unicode_char_entered(char)
 
 mglw.run_window_config(App)
