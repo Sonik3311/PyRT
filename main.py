@@ -6,6 +6,7 @@ from scene import Scene
 from shader_program import ShaderProgram
 from coloredText import bcolors as colors
 import pygame as pg
+from numpy.random import rand
 
 class App( mglw.WindowConfig ):
     TOMLParser = TOMLParser()
@@ -26,6 +27,8 @@ class App( mglw.WindowConfig ):
         self.initTextures()
         self.initScene()
         self.initUniforms()
+
+        self.frames = 0
         
 
         pg.init()
@@ -34,7 +37,8 @@ class App( mglw.WindowConfig ):
     def initShaders( self):
         self.shaders = ShaderProgram( self.ctx, "programs" )
         self.shaders.load_program( "pygameBlit" )
-        self.shaders.load_program( "RT")
+        self.shaders.load_program( "RT" )
+        self.shaders.load_program( "accumulator" )
 
     def initSurfaces( self ):
         self.vao = VAO( self.ctx )
@@ -44,6 +48,9 @@ class App( mglw.WindowConfig ):
         self.RTSurface = self.vao.get_quadfs(
             self.shaders.programs[ "RT" ]
         )
+        self.AccumulatorSurface = self.vao.get_quadfs(
+            self.shaders.programs[ "accumulator" ]
+        )
 
     def initTextures( self ):
         self.pgTexture = self.ctx.texture( self.window_size, components=4 )
@@ -52,6 +59,11 @@ class App( mglw.WindowConfig ):
         self.RTRenderTEX = self.ctx.texture(self.window_size, components=4, dtype="f4")
         self.RTRenderFBO = self.ctx.framebuffer(
             self.RTRenderTEX, self.ctx.depth_renderbuffer( self.window_size )
+        )
+
+        self.AccumulatorTEX = self.ctx.texture(self.window_size, components=4, dtype="f4")
+        self.AccumulatorFBO = self.ctx.framebuffer(
+            self.AccumulatorTEX, self.ctx.depth_renderbuffer( self.window_size )
         )
 
     def initScene( self ):
@@ -72,13 +84,27 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "RT", "skybox", 4)
         self.skyboxTexture.use(location=4)
 
-        self.scene.addSphere( (0,-1.5,-0.6), 0.5, (1,0.2,0.2),(1,1,1),(1,1,1))
-        self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.5,0.2,0.2),(1,1,1),(1,1,1))
-        self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0.2,1,0.2),(1,1,1),(1,1,1) )
-        self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0.2,0.5,0.2),(1,1,1),(1,1,1) )
-        self.scene.addCylinder((0, 2, 0.3), (0, 1, 0.9), 0.25, (0.2,0.2,1),(1,1,1),(1,1,1))
-        self.scene.addCylinder((0, 2, -0.3), (0, 1, -0.9), 0.25, (0.2,0.2,0.5),(1,1,1),(1,1,1))
-
+        #self.scene.addSphere( (0,-1.5,-0.6), 0.5, (0.8,0.2,0.2),(0.5,0.    0,1),(1,0,0))
+        #self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.7,0.7,0.7),(1,1,1),(0.75,1.0,0))
+        #self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0.2,0.4,0.2),(0.0,0.0,1),(1,0,0) )
+        #self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0.2,0.5,0.2),(0.0,0.0,1),(1,0,0) )
+        #self.scene.addCylinder((0, 2, 0.3), (0, 1, 0.9), 0.25, (0.2,0.2,0.8),(0.0,0.0,1),(1,1,0))
+        #self.scene.addCylinder((0, 2, -0.3), (0, 1, -0.9), 0.25, (0.2,0.2,0.5),(0.0,0.0,1),(1,1,0))
+        #(0.8,0.8,0.8), (0.8,0.8,0.8), (0.9, 0.0, 0.0)
+        #self.scene.addQuad((0,1,1), (0,-1,1), (0,-1,-1), (0,1,-1),  )
+        self.scene.addQuad(( 0,-3,-3), ( 0, 3,-3), ( 0, 3, 3), ( 0,-3, 3), (0.8,0.8,0.8), (0.8,0.8,0.8), (0.1, 0.0, 0.0, 0.0)) # back wall
+        self.scene.addQuad(( 0,-3,-3), ( 0, 3,-3), (-3, 3,-3), (-3,-3,-3), (0.8,0.1,0.1), (0.8,0.1,0.1), (0.1, 0.0, 0.0, 0.0)) # left wall
+        self.scene.addQuad(( 0, 3, 3), ( 0,-3, 3), (-3,-3, 3), (-3, 3, 3), (0.1,0.8,0.1), (0.1,0.8,0.1), (0.1, 0.0, 0.0, 0.0)) # right wall
+        self.scene.addQuad(( 0, 3,-3), ( 0, 3, 3), (-3, 3, 3), (-3, 3,-3), (0.8,0.8,0.8), (0.8,0.8,0.8), (0.1, 0.0, 0.0, 0.0)) # top wall
+        self.scene.addQuad(( 0,-3,-3), ( 0,-3, 3), (-3,-3, 3), (-3,-3,-3), (0.8,0.8,0.8), (0.8,0.8,0.8), (0.1, 0.0, 0.0, 0.0)) # bottom wall
+        
+        self.scene.addQuad((-1, 2.999,-1.5), (-1, 2.999, 1.5), (-2, 2.999, 1.5), (-2, 2.999,-1.5), (0.8,0.8,0.45), (0.8,0.8,0.8), (0.9, 0.0, 12.0, 0.0)) # top light
+        self.scene.addSphere((-1,-1.0,0), 1., (1,1,1), (1,1,1), (0,0.5,0,1))
+        #self.scene.addCube((3,1,0), (0.5,0.5,0.5),  (1,1,1), (1,1,1), (0,0,0,0))
+        
+        #self.scene.addCube((0,0,0), (0.5,0.5,0.5), (1,1,0.1), (0,0,0), (0,0,0,1))
+        
+        
         geometryData, materialData = self.scene.packObjects()
 
         geometryPixelCount = self.scene.getObjectCount( inPixels=True )
@@ -96,10 +122,12 @@ class App( mglw.WindowConfig ):
         sphereCount = self.scene.getObjectCount( countCategory="spheres" )
         cubeCount = self.scene.getObjectCount( countCategory="cubes" )
         cylinderCount = self.scene.getObjectCount( countCategory="cylinders" )
+        quadCount = self.scene.getObjectCount( countCategory="quads" )
         #print(f"\nSphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount};\ngeometryPixelCount: {geometryPixelCount}; materialPixelCount: {materialPixelCount}\n")
         self.set_uniform( "RT", "sphereCount", sphereCount )
         self.set_uniform( "RT", "cubeCount", cubeCount )
         self.set_uniform( "RT", "cylinderCount", cylinderCount )
+        self.set_uniform( "RT", "quadCount", quadCount)
         
         
 
@@ -107,8 +135,13 @@ class App( mglw.WindowConfig ):
         self.set_uniform( "pygameBlit", "pgTexture", 0 )
         self.pgTexture.use(location=0)
 
-        self.set_uniform( "pygameBlit", "rtTexture", 1)
+       
+        self.set_uniform( "accumulator", "currentFrame", 1)
         self.RTRenderTEX.use(location=1)
+
+        self.set_uniform( "pygameBlit", "rtTexture", 5)
+        self.set_uniform( "accumulator", "accumFrame", 5)
+        self.AccumulatorTEX.use(location=5)
 
         self.set_uniform( "RT", "geometryTexture", 2)
         self.geometryTexture.use( location=2 )
@@ -131,11 +164,17 @@ class App( mglw.WindowConfig ):
 
         #Render modernGL
         #Render RT
+        self.set_uniform("RT", "u_frame", self.frames)
+        self.set_uniform("accumulator", "frame", self.frames)
         self.RTRenderFBO.use()
         self.RTSurface.render()
+
+        self.AccumulatorFBO.use()
+        self.AccumulatorSurface.render()
         #Blit RT with pygame onto the screen
         self.ctx.screen.use()
         self.screenSurface.render()
+        self.frames += 1
     
     def set_uniform(self, shader_name, uniform_name, value):
         try:
