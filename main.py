@@ -4,6 +4,7 @@ from settings import TOMLParser
 from VAO import VAO
 from scene import Scene
 from shader_program import ShaderProgram
+from pgRenderer import PygameRenderer
 from coloredText import bcolors as colors
 import pygame as pg
 from numpy.random import rand
@@ -20,8 +21,6 @@ class App( mglw.WindowConfig ):
     def __init__( self, **kwargs ):
         super().__init__( **kwargs )
 
-        
-
         self.initShaders()
         self.initSurfaces()
         self.initTextures()
@@ -29,10 +28,9 @@ class App( mglw.WindowConfig ):
         self.initUniforms()
 
         self.frames = 0
-        
 
         pg.init()
-        self.pgSurface = pg.Surface( self.window_size, pg.SRCALPHA )
+        self.pgRenderer = PygameRenderer(self.window_size)
 
     def initShaders( self):
         self.shaders = ShaderProgram( self.ctx, "programs" )
@@ -83,15 +81,7 @@ class App( mglw.WindowConfig ):
 
         self.set_uniform( "RT", "skybox", 4)
         self.skyboxTexture.use(location=4)
-
-        #self.scene.addSphere( (0,-1.5,-0.6), 0.5, (0.8,0.2,0.2),(0.5,0.    0,1),(1,0,0))
-        #self.scene.addSphere( (0,-1.5, 0.6), 0.5, (0.7,0.7,0.7),(1,1,1),(0.75,1.0,0))
-        #self.scene.addCube( (0,0,-0.6), (0.5,0.5,0.5), (0.2,0.4,0.2),(0.0,0.0,1),(1,0,0) )
-        #self.scene.addCube( (0,0, 0.6), (0.5,0.5,0.5), (0.2,0.5,0.2),(0.0,0.0,1),(1,0,0) )
-        #self.scene.addCylinder((0, 2, 0.3), (0, 1, 0.9), 0.25, (0.2,0.2,0.8),(0.0,0.0,1),(1,1,0))
-        #self.scene.addCylinder((0, 2, -0.3), (0, 1, -0.9), 0.25, (0.2,0.2,0.5),(0.0,0.0,1),(1,1,0))
-        #(0.8,0.8,0.8), (0.8,0.8,0.8), (0.9, 0.0, 0.0)
-        #self.scene.addQuad((0,1,1), (0,-1,1), (0,-1,-1), (0,1,-1),  )
+        
         self.scene.addQuad(( 0,-3,-3), ( 0, 3,-3), ( 0, 3, 3), ( 0,-3, 3), (0.8,0.8,0.8), (0.8,0.8,0.8), (0.1, 0.0, 0.0, 0.0)) # back wall
         self.scene.addQuad(( 0,-3,-3), ( 0, 3,-3), (-3, 3,-3), (-3,-3,-3), (0.8,0.1,0.1), (0.8,0.1,0.1), (0.1, 0.0, 0.0, 0.0)) # left wall
         self.scene.addQuad(( 0, 3, 3), ( 0,-3, 3), (-3,-3, 3), (-3, 3, 3), (0.1,0.8,0.1), (0.1,0.8,0.1), (0.1, 0.0, 0.0, 0.0)) # right wall
@@ -100,9 +90,6 @@ class App( mglw.WindowConfig ):
         
         self.scene.addQuad((-1, 2.999,-1.5), (-1, 2.999, 1.5), (-2, 2.999, 1.5), (-2, 2.999,-1.5), (0.8,0.8,0.45), (0.8,0.8,0.8), (0.9, 0.0, 12.0, 0.0)) # top light
         self.scene.addSphere((-1,-1.0,0), 1., (1,1,1), (1,1,1), (0,0.5,0,1))
-        #self.scene.addCube((3,1,0), (0.5,0.5,0.5),  (1,1,1), (1,1,1), (0,0,0,0))
-        
-        #self.scene.addCube((0,0,0), (0.5,0.5,0.5), (1,1,0.1), (0,0,0), (0,0,0,1))
         
         
         geometryData, materialData = self.scene.packObjects()
@@ -110,26 +97,22 @@ class App( mglw.WindowConfig ):
         geometryPixelCount = self.scene.getObjectCount( inPixels=True )
         materialPixelCount = self.scene.getMaterialPixelCount()
         geometryCount = self.scene.getObjectCount()
+        self.set_uniform( "RT", "geometryCount", geometryCount )
+        self.set_uniform( "RT", "geometryPixelCount", geometryPixelCount )
 
         self.geometryTexture = self.ctx.texture((geometryPixelCount, 1), components=4, dtype="f4" )
         self.geometryTexture.write(geometryData)
         self.materialTexture = self.ctx.texture((materialPixelCount, 1), components=4, dtype="f4" )
         self.materialTexture.write(materialData)
 
-
-        self.set_uniform( "RT", "geometryCount", geometryCount )
-        self.set_uniform( "RT", "geometryPixelCount", geometryPixelCount )
         sphereCount = self.scene.getObjectCount( countCategory="spheres" )
         cubeCount = self.scene.getObjectCount( countCategory="cubes" )
         cylinderCount = self.scene.getObjectCount( countCategory="cylinders" )
         quadCount = self.scene.getObjectCount( countCategory="quads" )
-        #print(f"\nSphere count: {sphereCount}; Cube count: {cubeCount}; Cylinder count: {cylinderCount};\ngeometryPixelCount: {geometryPixelCount}; materialPixelCount: {materialPixelCount}\n")
         self.set_uniform( "RT", "sphereCount", sphereCount )
         self.set_uniform( "RT", "cubeCount", cubeCount )
         self.set_uniform( "RT", "cylinderCount", cylinderCount )
         self.set_uniform( "RT", "quadCount", quadCount)
-        
-        
 
     def initUniforms( self ):
         self.set_uniform( "pygameBlit", "pgTexture", 0 )
@@ -151,16 +134,9 @@ class App( mglw.WindowConfig ):
 
         self.set_uniform( "RT", "u_resolution", (self.window_size[0],self.window_size[1]) )
         
-
-    def close( self ):
-        self.shaders.destroy()
-    
     def render( self, time: float, delta_time: float ):
-        #Render pygame
-        self.pgSurface.fill( (0,0,0,0) )
-        pg.draw.rect( self.pgSurface, (255,21,255,255), (0,self.window_size[1]-20,self.window_size[0],20))
-
-        self.pgTexture.write( self.pgSurface.get_view('1') )
+        self.pgRenderer.render()
+        self.pgTexture.write( self.pgRenderer.surface.get_view('1') )
 
         #Render modernGL
         #Render RT
@@ -186,7 +162,8 @@ class App( mglw.WindowConfig ):
     
     
     
-    
+    def close( self ):
+        self.shaders.destroy()
     
     
     def key_event(self, key, action, modifiers): ...
