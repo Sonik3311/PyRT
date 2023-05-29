@@ -5,6 +5,8 @@ out vec4 fragColor;
 
 uniform vec2 u_resolution;
 uniform int u_frame;
+uniform int maxSamples;
+uniform int maxReflections;
 uniform int skyboxType;
 
 uniform sampler2D geometryTexture;
@@ -415,12 +417,10 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
     struct rayStruct duplicateRay;
     duplicateRay.origin = ray.origin;
     duplicateRay.direction = ray.direction;
-    int depth = 0;
-    int maxRelfections = 16;
     struct materialStruct hitMaterial;
     vec3 hitpoint;
     vec3 hitnormal;
-    for (int relfections=0; relfections<maxRelfections; relfections++){
+    for (int relfections=0; relfections<maxReflections; relfections++){
         bool raycastResult = raycast( duplicateRay.origin, duplicateRay.direction, hitMaterial, hitpoint, hitnormal );
         if (raycastResult == false){ //no hit
             color += SRGBToLinear(getSkyboxColor(duplicateRay.direction))    * rayColor;
@@ -464,7 +464,6 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
 
 vec3 PathTrace(rayStruct ray){
     vec3 color = vec3(0);
-    int maxSamples = 32;
     for (int smpl=0; smpl<maxSamples; smpl++){
         color += rayTraceSample(ray, smpl).rgb;
     }

@@ -2,8 +2,11 @@
 resolution = [1280,720]
 title = "Window"
 GLversion = [4,6]
-resizable = true
+resizable = false
 
-[SCENE]
-scenefile = ""
-skyboxfile = "./skybox.jpg"
+[RT]
+samples     = 2
+reflections = 6
+accumframes = true
+skyboxpath  = "./skybox.jpg"
+scenepath   = ""
