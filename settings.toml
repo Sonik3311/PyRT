@@ -7,6 +7,6 @@ resizable = false
 [RT]
 samples     = 2
 reflections = 6
-accumframes = true
+accumframes = false
 skyboxpath  = "./skyboxes/skybox.jpg"
 scenepath   = "./scenes/scene.pyrt"

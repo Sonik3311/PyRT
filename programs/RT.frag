@@ -9,6 +9,9 @@ uniform int maxSamples;
 uniform int maxReflections;
 uniform int skyboxType;
 
+uniform vec2 u_mousePos;
+uniform vec3 u_cameraPos;
+
 uniform sampler2D geometryTexture;
 uniform sampler2D materialTexture;
 uniform sampler2D skybox;
@@ -474,6 +477,13 @@ vec3 PathTrace(rayStruct ray){
 //----------------------------------------------------------------------------------------------------------
 // main
 //----------------------------------------------------------------------------------------------------------
+
+mat2 rotate(float a){
+    float s = sin(a);
+    float c = cos(a);
+    return mat2(c, -s, s, c);
+}
+
 void main()
 {   
     vec2 aspect_ratio = u_resolution/u_resolution.y;
@@ -484,10 +494,13 @@ void main()
     
 
     struct rayStruct ray;
-    ray.origin = vec3(-8,0,0);
+    ray.origin = u_cameraPos;//vec3(-8,0,0);
 
     
     ray.direction = normalize( vec3( 0.7,norm_uv.yx ) );
+    ray.direction.xy *= rotate(u_mousePos.y);
+    ray.direction.zx *= rotate(u_mousePos.x);
+    
 
     vec3 color = PathTrace(ray);//rayTraceSample(ray);
     fragColor = vec4(color,1.0);//texture(geometryTexture, vec2(float(0+2.5)/geometryPixelCount,0));//

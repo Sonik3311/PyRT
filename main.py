@@ -1,6 +1,7 @@
 import moderngl as mgl
 import moderngl_window as mglw
 import pygame as pg
+from numpy import cos, pi, sin
 from numpy.random import rand
 
 from coloredText import bcolors as colors
@@ -42,9 +43,18 @@ class App(mglw.WindowConfig):
         self.initTextures()
         self.initScene()
         self.initUniforms()
+        self.initCameraControls()
 
         self.gui = ImGUIManager(self)
         self.frames = 0
+
+    def initCameraControls(self):
+        self.allowCameraRotation = False
+        self.allowCameraMovement = False
+        self.cameraRotation = [0,0]
+        self.cameraPosition = [0,0,0]
+        self.tempDir = [0,0,0]
+
 
     def initShaders(self):
         self.shaders = ShaderProgram(self.ctx, "programs")
@@ -162,7 +172,43 @@ class App(mglw.WindowConfig):
         self.set_uniform("RT", "maxReflections", self.settings.rt_reflections)
         print(f"{colors.HEADER}updateUniforms{colors.ENDC} - {colors.OKCYAN}RT{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
 
+    def updateCameraUniforms(self):
+        self.set_uniform("RT", "u_cameraPos", self.cameraPosition)
+        self.set_uniform("RT", "u_mousePos", self.cameraRotation)
+    
+    def updatePosition(self):
+        yaw = self.cameraRotation[0]
+        pitch = self.cameraRotation[1]
+        fx = cos(yaw)*cos(pitch)
+        fy = sin(yaw)*cos(pitch)
+        fz = sin(pitch)
+
+        rx = cos(yaw-pi/2)
+        ry = sin(yaw-pi/2)
+        rz = 0
+
+        ux = 0#ry*fz - rz*fy
+        uy = 0#rz*fx - rx*fz
+        uz = 1#rx*fy - ry*fx
+
+        dirx = fx*self.tempDir[0] + rx*self.tempDir[1] + ux*self.tempDir[2]
+        diry = fy*self.tempDir[0] + ry*self.tempDir[1] + uy*self.tempDir[2]
+        dirz = fz*self.tempDir[0] + rz*self.tempDir[1] + uz*self.tempDir[2]
+
+        self.cameraPosition[0] += dirx/5
+        self.cameraPosition[1] += dirz/5
+        self.cameraPosition[2] += -diry/5
+
     def render(self, time: float, delta_time: float):
+        # Update
+        if self.allowCameraMovement:
+            self.updatePosition()
+            self.set_uniform("RT", "u_cameraPos", self.cameraPosition)
+            self.frames = 0
+        if self.allowCameraRotation:
+            self.set_uniform("RT", "u_mousePos", self.cameraRotation)
+            self.frames = 0
+
         # Render modernGL
         # Render RT
         self.set_uniform("RT", "u_frame", self.frames)
@@ -195,14 +241,55 @@ class App(mglw.WindowConfig):
     def mouse_drag_event(self, x, y, dx, dy):
         self.gui.imgui.mouse_drag_event(x, y, dx, dy)
 
+        if self.allowCameraRotation:
+            self.cameraRotation[0] += dx * 0.0174533/9
+            self.cameraRotation[1] += dy * 0.0174533/9
+
+            #self.updateCameraUniforms()
+
     def mouse_scroll_event(self, x_offset, y_offset):
         self.gui.imgui.mouse_scroll_event(x_offset, y_offset)
 
     def mouse_press_event(self, x, y, button):
         self.gui.imgui.mouse_press_event(x, y, button)
+        if button == 3:
+            self.allowCameraMovement = True
+            self.allowCameraRotation = True
 
     def mouse_release_event(self, x: int, y: int, button: int):
         self.gui.imgui.mouse_release_event(x, y, button)
+        if button == 3:
+            self.allowCameraMovement = False
+            self.allowCameraRotation = False
+
+    def key_event(self, key, action, modifiers):
+    # Key presses
+        if action == self.wnd.keys.ACTION_PRESS:
+            if key == self.wnd.keys.SPACE:
+                self.tempDir[2] = 1
+            elif modifiers.ctrl:
+                self.tempDir[2] = -1
+            
+            if key == self.wnd.keys.W:
+                self.tempDir[0] = 1
+            elif key == self.wnd.keys.S:
+                self.tempDir[0] = -1
+            
+            if key == self.wnd.keys.D:
+                self.tempDir[1] = 1
+            elif key == self.wnd.keys.A:
+                self.tempDir[1] = -1
+            
+
+    # Key releases
+        elif action == self.wnd.keys.ACTION_RELEASE:
+            if key == self.wnd.keys.SPACE or not modifiers.ctrl:
+                self.tempDir[2] = 0
+            if key == self.wnd.keys.W or key == self.wnd.keys.S:
+                self.tempDir[0] = 0
+            if key == self.wnd.keys.D or key == self.wnd.keys.A:
+                self.tempDir[1] = 0
+       
 
     def unicode_char_entered(self, char):
         self.gui.imgui.unicode_char_entered(char)
