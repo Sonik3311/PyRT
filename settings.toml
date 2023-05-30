@@ -8,5 +8,5 @@ resizable = false
 samples     = 2
 reflections = 6
 accumframes = true
-skyboxpath  = "./skybox.jpg"
-scenepath   = ""
+skyboxpath  = "./skyboxes/skybox.jpg"
+scenepath   = "./scenes/scene.pyrt"

@@ -9,8 +9,13 @@ class ImGUIManager:
         self.imgui = ModernglWindowRenderer(self.app.wnd)
 
         self.openMenus = {
-            "fileMenu": [False, {}],
-            "settingsMenu": [False, {"render": [False, {}]}],
+            "fileMenu": [False, {
+                "openScene": [False, {}],
+                "openSkybox": [False, {}]
+            }],
+            "settingsMenu": [False, {
+                "render": [False, {}]
+            }],
         }
 
     def closeTree_exclude_startNode(self, node):
@@ -35,6 +40,8 @@ class ImGUIManager:
         ):
             if imgui.button(label="File"):
                 self.openMenus["fileMenu"][0] = not self.openMenus["fileMenu"][0]
+                if not self.openMenus["fileMenu"][0]:
+                    self.closeTree(self.openMenus["fileMenu"])
                 self.closeTree(self.openMenus["settingsMenu"])
 
             imgui.same_line()
@@ -56,6 +63,54 @@ class ImGUIManager:
             | imgui.WINDOW_NO_RESIZE
             | imgui.WINDOW_NO_SCROLLBAR,
         ):
+            if imgui.button(label="Open scene "):
+                state = self.openMenus["fileMenu"][1]["openScene"][0]
+                self.closeTree_exclude_startNode(self.openMenus["fileMenu"])
+                self.openMenus["fileMenu"][1]["openScene"][0] = not state
+                
+            if imgui.button(label="Open skybox"):
+                state = self.openMenus["fileMenu"][1]["openSkybox"][0]
+                self.closeTree_exclude_startNode(self.openMenus["fileMenu"])
+                self.openMenus["fileMenu"][1]["openSkybox"][0] = not state
+            imgui.end()
+        
+        ##############################################################################
+
+        if self.openMenus["fileMenu"][1]["openScene"][0] and imgui.begin(
+            "OpenScene",
+            flags=imgui.WINDOW_NO_TITLE_BAR
+            | imgui.WINDOW_NO_MOVE
+            | imgui.WINDOW_NO_RESIZE
+            | imgui.WINDOW_NO_SCROLLBAR,
+        ):
+            changed, text = imgui.input_text(
+                label="Path", value=self.app.settings.rt_scenepath, buffer_length=400
+            )
+            if changed:
+                self.app.settings.rt_scenepath = text
+            if imgui.button(label="Apply"):
+                self.app.scene.importFromFile(self.app.settings.rt_scenepath)
+                self.app.createScene()
+            
+            imgui.end()
+
+        
+        if self.openMenus["fileMenu"][1]["openSkybox"][0] and imgui.begin(
+            "OpenScene",
+            flags=imgui.WINDOW_NO_TITLE_BAR
+            | imgui.WINDOW_NO_MOVE
+            | imgui.WINDOW_NO_RESIZE
+            | imgui.WINDOW_NO_SCROLLBAR,
+        ):
+            changed, text = imgui.input_text(
+                label="Path", value=self.app.settings.rt_skyboxpath, buffer_length=400
+            )
+            if changed:
+                self.app.settings.rt_skyboxpath = text
+            if imgui.button(label="Apply"):
+                #self.app.scene.importFromFile(self.app.settings.rt_skyboxpath)
+                self.app.createSkybox()
+            
             imgui.end()
 
         ##############################################################################
@@ -68,9 +123,7 @@ class ImGUIManager:
             | imgui.WINDOW_NO_SCROLLBAR,
         ):
             if imgui.button(label="Render"):
-                self.openMenus["settingsMenu"][1]["render"][0] = not self.openMenus[
-                    "settingsMenu"
-                ][1]["render"][0]
+                self.openMenus["settingsMenu"][1]["render"][0] = not self.openMenus["settingsMenu"][1]["render"][0]
             imgui.end()
 
         ##############################################################################
@@ -105,10 +158,12 @@ class ImGUIManager:
                 changedSettings = True
             imgui.pop_item_width()
             imgui.end()
+        
+
+        
 
         if changedSettings:
             self.app.updateRTuniforms()
-            self.app.updateAccumUniforms()
 
         imgui.render()
         self.imgui.render(imgui.get_draw_data())

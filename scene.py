@@ -1,5 +1,9 @@
-import numpy as np
 import struct
+
+import numpy as np
+
+from PYRTParser import PYRTParser
+
 
 class Scene:
     objects = {
@@ -8,6 +12,8 @@ class Scene:
         "cylinders": [],
         "quads" : [],
     }
+
+    PYRTParser = PYRTParser()
 
     def getObjectCount(self, countCategory=None, inPixels=False):
         lengths = {"spheres": 1, "cubes": 2, "cylinders": 2, "quads": 3}
@@ -18,18 +24,31 @@ class Scene:
     def getMaterialPixelCount( self ):
          return sum([len(self.objects[category]) * 3 for category in self.objects])
 
-    def addSphere( self, pos,radius,  color,specColor,RMEG):
-        self.objects["spheres"].append([pos,radius, color,specColor,RMEG])
+    def addSphere( self, posr,  color,specColor,RMEG):
+        self.objects["spheres"].append([posr[0:3], posr[3], color,specColor,RMEG])
     
     def addCube( self, pos,size, color,specColor,RMEG):
         self.objects["cubes"].append([pos,size, color,specColor,RMEG])
     
-    def addCylinder( self, posA,posB,radius, color,specColor,RMEG):
-        self.objects["cylinders"].append([posA,posB,radius, color,specColor,RMEG])
+    def addCylinder( self, posA,posBradius, color,specColor,RMEG):
+        self.objects["cylinders"].append([posA,posBradius[0:3],posBradius[3], color,specColor,RMEG])
     
     def addQuad( self, posBL,posBR,posTR,posTL, color,specColor,RMEG):
         self.objects["quads"].append([posBL,posBR,posTR,posTL, color,specColor,RMEG])
-        #self.objects["quads"].append([( 0,-1,-1),( 0, 1,-1),( 0, 1, 1),( 0,-1, 1), color,specColor,RME])
+
+
+    def importFromFile(self,filePath):
+        self.objects = {
+            "spheres": [],
+            "cubes": [],
+            "cylinders": [],
+            "quads" : [],
+        }
+        tokens = self.PYRTParser.tokenize(filePath)
+        for token in tokens:
+            func = eval(f"self.add{token[0].capitalize()}")
+            func(*token[1])
+
     
     def packObjects( self ):
         dataGeometry = b''

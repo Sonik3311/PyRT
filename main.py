@@ -45,9 +45,6 @@ class App(mglw.WindowConfig):
 
         self.gui = ImGUIManager(self)
         self.frames = 0
-        # imgui.create_context()
-
-    # self.imgui = ModernglWindowRenderer(self.wnd)
 
     def initShaders(self):
         self.shaders = ShaderProgram(self.ctx, "programs")
@@ -59,109 +56,34 @@ class App(mglw.WindowConfig):
         self.vao = VAO(self.ctx)
         self.screenSurface = self.vao.get_quadfs(self.shaders.programs["pygameBlit"])
         self.RTSurface = self.vao.get_quadfs(self.shaders.programs["RT"])
-        self.AccumulatorSurface = self.vao.get_quadfs(
-            self.shaders.programs["accumulator"]
-        )
-        print(f"{colors.HEADER}initSurfaces - {colors.OKGREEN}Success{colors.ENDC}")
+        self.AccumulatorSurface = self.vao.get_quadfs(self.shaders.programs["accumulator"])
+        print(f"{colors.HEADER}initSurfaces{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
 
     def initTextures(self):
         self.RTRenderTEX = self.ctx.texture(self.window_size, components=4, dtype="f4")
-        self.RTRenderFBO = self.ctx.framebuffer(
-            self.RTRenderTEX, self.ctx.depth_renderbuffer(self.window_size)
-        )
+        self.RTRenderFBO = self.ctx.framebuffer(self.RTRenderTEX, self.ctx.depth_renderbuffer(self.window_size))
 
-        self.AccumulatorTEX = self.ctx.texture(
-            self.window_size, components=4, dtype="f4"
-        )
-        self.AccumulatorFBO = self.ctx.framebuffer(
-            self.AccumulatorTEX, self.ctx.depth_renderbuffer(self.window_size)
-        )
-        print(f"{colors.HEADER}initTextures - {colors.OKGREEN}Success{colors.ENDC}")
+        self.AccumulatorTEX = self.ctx.texture(self.window_size, components=4, dtype="f4")
+        self.AccumulatorFBO = self.ctx.framebuffer(self.AccumulatorTEX, self.ctx.depth_renderbuffer(self.window_size))
+
+        self.geometryTexture = self.ctx.texture((1, 1), components=4, dtype="f4")
+        self.materialTexture = self.ctx.texture((1, 1), components=4, dtype="f4")
+
+        self.skyboxTexture = self.ctx.texture((1, 1), components=4, dtype='f4')
+        print(f"{colors.HEADER}initTextures{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
+
 
     def initScene(self):
         self.scene = Scene()
 
-        scenePath = self.settings.rt_scenepath
-        if scenePath != "":
-            pass
-        skyboxPath = self.settings.rt_skyboxpath
-        if skyboxPath != "":
-            skybox = pg.image.load(skyboxPath)
-            self.skyboxTexture = self.ctx.texture(
-                size=skybox.get_size(),
-                components=3,
-                data=pg.image.tostring(skybox, "RGB"),
-            )
-            self.set_uniform("RT", "skyboxType", 1)
-        else:
-            self.skyboxTexture = self.ctx.texture(
-                size=(128, 128),
-                components=3,
-                data=b"\xff\x00\xff\x00\x00\x00" * 128 * 64,
-            )
-            self.set_uniform("RT", "skyboxType", 0)
-
-        self.set_uniform("RT", "skybox", 4)
-        self.skyboxTexture.use(location=4)
-
-        self.scene.addQuad(
-            (0, -3, -3),
-            (0, 3, -3),
-            (0, 3, 3),
-            (0, -3, 3),
-            (0.8, 0.8, 0.8),
-            (0.8, 0.8, 0.8),
-            (0.1, 0.0, 0.0, 0.0),
-        )  # back wall
-        self.scene.addQuad(
-            (0, -3, -3),
-            (0, 3, -3),
-            (-3, 3, -3),
-            (-3, -3, -3),
-            (0.8, 0.1, 0.1),
-            (0.8, 0.1, 0.1),
-            (0.1, 0.0, 0.0, 0.0),
-        )  # left wall
-        self.scene.addQuad(
-            (0, 3, 3),
-            (0, -3, 3),
-            (-3, -3, 3),
-            (-3, 3, 3),
-            (0.1, 0.8, 0.1),
-            (0.1, 0.8, 0.1),
-            (0.1, 0.0, 0.0, 0.0),
-        )  # right wall
-        self.scene.addQuad(
-            (0, 3, -3),
-            (0, 3, 3),
-            (-3, 3, 3),
-            (-3, 3, -3),
-            (0.8, 0.8, 0.8),
-            (0.8, 0.8, 0.8),
-            (0.1, 0.0, 0.0, 0.0),
-        )  # top wall
-        self.scene.addQuad(
-            (0, -3, -3),
-            (0, -3, 3),
-            (-3, -3, 3),
-            (-3, -3, -3),
-            (0.8, 0.8, 0.8),
-            (0.8, 0.8, 0.8),
-            (0.1, 0.0, 0.0, 0.0),
-        )  # bottom wall
-
-        self.scene.addQuad(
-            (-1, 2.999, -1.5),
-            (-1, 2.999, 1.5),
-            (-2, 2.999, 1.5),
-            (-2, 2.999, -1.5),
-            (0.8, 0.8, 0.45),
-            (0.8, 0.8, 0.8),
-            (0.9, 0.0, 12.0, 0.0),
-        )  # top light
-        self.scene.addSphere(
-            (-1, -1.0, 0), 1.0, (1, 0.7, 1), (1, 1, 1), (0.0, 0.0, 0, 1)
-        )
+        self.scene.importFromFile(self.settings.rt_scenepath)
+        self.createScene()
+        self.createSkybox()
+    
+    def createScene(self):
+        self.frames = 0
+        self.geometryTexture.release()
+        self.materialTexture.release()
 
         geometryData, materialData = self.scene.packObjects()
 
@@ -170,15 +92,17 @@ class App(mglw.WindowConfig):
         geometryCount = self.scene.getObjectCount()
         self.set_uniform("RT", "geometryCount", geometryCount)
         self.set_uniform("RT", "geometryPixelCount", geometryPixelCount)
-
+        data = b'' if geometryPixelCount == 0 else geometryData
         self.geometryTexture = self.ctx.texture(
-            (geometryPixelCount, 1), components=4, dtype="f4"
+            (geometryPixelCount, 1), components=4, dtype="f4", data=data
         )
-        self.geometryTexture.write(geometryData)
+        data = b'' if geometryPixelCount == 0 else materialData
         self.materialTexture = self.ctx.texture(
-            (materialPixelCount, 1), components=4, dtype="f4"
+            (materialPixelCount, 1), components=4, dtype="f4", data=data
         )
-        self.materialTexture.write(materialData)
+
+        self.geometryTexture.use(location=2)
+        self.materialTexture.use(location=3)
 
         sphereCount = self.scene.getObjectCount(countCategory="spheres")
         cubeCount = self.scene.getObjectCount(countCategory="cubes")
@@ -188,7 +112,29 @@ class App(mglw.WindowConfig):
         self.set_uniform("RT", "cubeCount", cubeCount)
         self.set_uniform("RT", "cylinderCount", cylinderCount)
         self.set_uniform("RT", "quadCount", quadCount)
-        print(f"{colors.HEADER}initScene    - {colors.OKGREEN}Success{colors.ENDC}")
+        print(f"{colors.HEADER}createScene - {colors.OKGREEN}Success{colors.ENDC}")
+
+    def createSkybox(self):
+        self.frames = 0
+        #check if path exists
+        self.skyboxTexture.release()
+        try:
+            f = open(self.settings.rt_skyboxpath, "r")
+        except FileNotFoundError:
+            print(f"{colors.HEADER}createSkybox{colors.ENDC} - {colors.WARNING}FileNotFoundError: {colors.ENDC}file {colors.OKBLUE}[{self.settings.rt_skyboxpath}]{colors.ENDC} doesn't exist!")
+            self.set_uniform("RT", "skyboxType", 0)
+            return
+
+        skyboxPath = self.settings.rt_skyboxpath
+        skybox = pg.image.load(skyboxPath)
+        self.skyboxTexture = self.ctx.texture(
+            size=skybox.get_size(),
+            components=3,
+            data=pg.image.tostring(skybox, "RGB"),
+        )
+        self.skyboxTexture.use(location=4)
+        self.set_uniform("RT", "skyboxType", 1)
+        print(f"{colors.HEADER}createSkybox - {colors.OKGREEN}Success{colors.ENDC}")
 
     def initUniforms(self):
         self.set_uniform("accumulator", "currentFrame", 1)
@@ -203,28 +149,18 @@ class App(mglw.WindowConfig):
 
         self.set_uniform("RT", "materialTexture", 3)
         self.materialTexture.use(location=3)
-        self.set_uniform(
-            "RT", "u_resolution", (self.window_size[0], self.window_size[1])
-        )
+        self.set_uniform("RT", "u_resolution", (self.window_size[0], self.window_size[1]))
+        
+        self.set_uniform("RT", "skybox", 4)
 
         self.updateRTuniforms()
-        self.updateAccumUniforms()
-        print(f"{colors.HEADER}initUniforms - {colors.OKGREEN}Success{colors.ENDC}")
+        print(f"{colors.HEADER}initUniforms{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
 
     def updateRTuniforms(self):
         self.frames = 0
         self.set_uniform("RT", "maxSamples", self.settings.rt_samples)
         self.set_uniform("RT", "maxReflections", self.settings.rt_reflections)
-        print(
-            f"{colors.HEADER}updateUniforms{colors.ENDC} - {colors.OKCYAN}RT{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}"
-        )
-
-    def updateAccumUniforms(self):
-        self.frames = 0
-        self.set_uniform("accumulator", "accumulate", self.settings.rt_accumframes)
-        print(
-            f"{colors.HEADER}updateUniforms{colors.ENDC} - {colors.OKCYAN}accumulator{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}"
-        )
+        print(f"{colors.HEADER}updateUniforms{colors.ENDC} - {colors.OKCYAN}RT{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
 
     def render(self, time: float, delta_time: float):
         # Render modernGL
@@ -241,7 +177,7 @@ class App(mglw.WindowConfig):
         self.screenSurface.render()
 
         # Render ImGUI
-        self.frames += 1
+        self.frames = self.frames + 1 if self.settings.rt_accumframes else 0
         self.gui.render()
 
     def set_uniform(self, shader_name, uniform_name, value):
