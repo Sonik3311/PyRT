@@ -86,20 +86,34 @@ class Geometry:
                 
         if group != None:      # convert to local space of the new group if not world
             medianVec = Vector3(0, 0, 0)
+            # compute local pivot
             for i in range(len(self.vertices)):
-                # globat transform and compute local pivot
-                rotated = group.rotation * Quaternion(x=self.vertices[i].x, y=self.vertices[i].y, z=self.vertices[i].z, w=0) * group.rotation.inverted()
-                newPoint = Vector3(rotated.x, rotated.y, rotated.z) + group.position
-                self.vertices[i] = newPoint
+
                 medianVec += self.vertices[i]
-            
             medianVec /= len(self.vertices)
-            
+            # rotate local
+
             for i in range(len(self.vertices)):
                 # apply local rotation
                 rotated = self.rotation * Quaternion(self.vertices[i].x - medianVec.x, y=self.vertices[i].y - medianVec.y, z=self.vertices[i].z - medianVec.z, w=0) * self.rotation.inverted()
                 newPoint = Vector3(rotated.x, rotated.y, rotated.z) + medianVec
                 self.vertices[i] = newPoint
+            
+            # global transform
+            for i in range(len(self.vertices)):
+                # globat transform and compute local pivot
+                rotated = group.rotation * Quaternion(x=self.vertices[i].x, y=self.vertices[i].y, z=self.vertices[i].z, w=0) * group.rotation.inverted()
+                newPoint = Vector3(rotated.x, rotated.y, rotated.z) + group.position
+                self.vertices[i] = newPoint
+                #medianVec += self.vertices[i]
+            
+            #medianVec /= len(self.vertices)
+            
+            #for i in range(len(self.vertices)):
+            #    # apply local rotation
+            #    rotated = self.rotation * Quaternion(self.vertices[i].x - medianVec.x, y=self.vertices[i].y - medianVec.y, z=self.vertices[i].z - medianVec.z, w=0) * self.rotation.inverted()
+            #    newPoint = Vector3(rotated.x, rotated.y, rotated.z) + medianVec
+            #    self.vertices[i] = newPoint
             
             
         self.group = group

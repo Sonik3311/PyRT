@@ -28,20 +28,22 @@ class Scene:
 
     def shapeCallback(self, line, parent, type, position=VectorN((0, 0, 0)),
                       rotation=VectorN((0, 0, 0)), size=None, material=backup_material, **kwargs):
+        #size = kwargs['size'] if 'size' in kwargs else None
+        #print("kwargs:", size, kwargs)
         response = self.resolveLayerDependencies(parent, None)
 
         rotation = Quaternion.from_euler(*rotation)
         parent = self.groups[parent[len(parent)-1]] if len(parent) > 0 else None
         position = Vector3(*position)
         vertices = []
-        size = None
+        #size = None
 
         match type:
             case 'cube':
                 size = Vector3(*size) if size else Vector3(1, 1, 1)
                 vertices = [position]
             case 'sphere':
-                radius = size if size else 0.0
+                size = size or 1.0
                 vertices = [position]
             case 'cylinder':
                 top_pos = kwargs['topPosition'] if 'topPosition' in kwargs else (0, 0, 1)
@@ -50,7 +52,7 @@ class Scene:
                     Vector3(*top_pos),
                     Vector3(*btm_pos),
                 ]
-                size = size or 0.0
+                size = size or 1.0
             case "quad":
                 BLpos = kwargs['bottomLeft'] if 'bottomLeft' in kwargs else (0,-1,-1)
                 BRpos = kwargs['bottomRight'] if 'bottomRight' in kwargs else (0,-1, 1)
@@ -177,99 +179,3 @@ class Scene:
                     dataGeometry += struct.pack(format_string, *pixelDataGeometry[objectType](obj))
                     dataMaterial += struct.pack('12f', *pixelDataMaterial(obj))
         return dataGeometry, dataMaterial
-
-
-        
-
-#scene = Scene()
-#scene.importFromFile('Scripts/2.pyrt')
-#dg, dm = scene.packData()
-#print(dg, "\n", dm)
-#gpc, mpc = scene.getObjectCount(inPixels=True), scene.getMaterialPixelCount()
-#print(gpc, mpc)
-
-
-
-
-
-
-"""
-class Scene:
-    objects = {
-        #         group id
-        #           [1,...]
-        "spheres": [],
-        "cubes": [],
-        "cylinders": [],
-        "quads" : [],
-    }
-    
-    #         {"name":"groupName", "id":1}
-    groups = []
-
-    PYRTParser = PYRTParser()
-
-    def getObjectCount(self, countCategory=None, inPixels=False):
-        lengths = {"spheres": 1, "cubes": 2, "cylinders": 2, "quads": 3}
-        objects = self.objects if countCategory is None else {countCategory: self.objects[countCategory]}
-
-        return sum([len(objects[category]) * lengths[category] if inPixels else len(objects[category]) for category in objects])
-    
-    def getMaterialPixelCount( self ):
-         return sum([len(self.objects[category]) * 3 for category in self.objects])
-
-    def addSphere( self, posr,  color,specColor,RMEG):
-        self.objects["spheres"].append([posr[0:3], posr[3], color,specColor,RMEG])
-    
-    def addCube( self, pos,size, color,specColor,RMEG):
-        self.objects["cubes"].append([pos,size, color,specColor,RMEG])
-    
-    def addCylinder( self, posA,posBradius, color,specColor,RMEG):
-        self.objects["cylinders"].append([posA,posBradius[0:3],posBradius[3], color,specColor,RMEG])
-    
-    def addQuad( self, posBL,posBR,posTR,posTL, color,specColor,RMEG):
-        self.objects["quads"].append([posBL,posBR,posTR,posTL, color,specColor,RMEG])
-
-
-    def importFromFile(self,filePath):
-        self.objects = {
-            "spheres": [],
-            "cubes": [],
-            "cylinders": [],
-            "quads" : [],
-        }
-        tokens = self.PYRTParser.tokenize(filePath)
-        for token in tokens:
-            func = eval(f"self.add{token[0].capitalize()}")
-            func(*token[1])
-
-    
-    def packObjects( self ):
-        dataGeometry = b''
-        dataMaterial = b''
-        shapes = {
-            "spheres":   lambda object: (object[0][0], object[0][1], object[0][2], object[1]),
-
-            "cubes":     lambda object: (object[0][0], object[0][1], object[0][2], 0, 
-                                         object[1][0], object[1][1], object[1][2], 0),
-
-            "cylinders": lambda object: (object[0][0], object[0][1], object[0][2], object[2], 
-                                         object[1][0], object[1][1], object[1][2], 0),
-
-            "quads":     lambda object: (object[0][0], object[0][1], object[0][2], object[3][0],
-                                         object[1][0], object[1][1], object[1][2], object[3][1],
-                                         object[2][0], object[2][1], object[2][2], object[3][2])
-        }
-        material = lambda material: (object[-3:-2][0][0], object[-3:-2][0][1], object[-3:-2][0][2], 0, # color
-                                     object[-2:-1][0][0], object[-2:-1][0][1], object[-2:-1][0][2], 0, # specular color
-                                     object[-1:][0][0],   object[-1:][0][1],   object[-1:][0][2]  , object[-1:][0][3], # roughness metalness emissive
-        )
-        for category in self.objects:
-            if category in shapes and len(self.objects[category]) > 0:
-                format_string = f"{len(shapes[category](self.objects[category][0]))}f"
-                for object in self.objects[category]:
-                    dataGeometry += struct.pack(format_string, *shapes[category](object))
-                    dataMaterial += struct.pack("12f", *material(object))
-
-        return dataGeometry, dataMaterial
-"""
