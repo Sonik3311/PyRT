@@ -1,11 +1,10 @@
 import moderngl as mgl
 import moderngl_window as mglw
 import pygame as pg
-from numpy import cos, pi, sin
-from numpy.random import rand
-
 from coloredText import bcolors as colors
 from GUI import ImGUIManager
+from numpy import cos, pi, sin
+from numpy.random import rand
 from scene import Scene
 from shader_program import ShaderProgram
 from TOMLParser import TOMLParser
@@ -14,7 +13,7 @@ from VAO import VAO
 
 class Settings:
     TOMLParser = TOMLParser()
-    TOMLParser.loadConfig("settings.toml")
+    TOMLParser.loadConfig("../settings.toml")
 
     gl_version = TOMLParser.getValue("settings", "WINDOW/GLversion")
     title = TOMLParser.getValue("settings", "WINDOW/title")
@@ -57,7 +56,7 @@ class App(mglw.WindowConfig):
 
 
     def initShaders(self):
-        self.shaders = ShaderProgram(self.ctx, "programs")
+        self.shaders = ShaderProgram(self.ctx, "../programs")
         self.shaders.load_program("pygameBlit")
         self.shaders.load_program("RT")
         self.shaders.load_program("accumulator")
@@ -82,7 +81,6 @@ class App(mglw.WindowConfig):
         self.skyboxTexture = self.ctx.texture((1, 1), components=4, dtype='f4')
         print(f"{colors.HEADER}initTextures{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
 
-
     def initScene(self):
         self.scene = Scene()
 
@@ -95,7 +93,7 @@ class App(mglw.WindowConfig):
         self.geometryTexture.release()
         self.materialTexture.release()
 
-        geometryData, materialData = self.scene.packObjects()
+        geometryData, materialData = self.scene.packData()
 
         geometryPixelCount = self.scene.getObjectCount(inPixels=True)
         materialPixelCount = self.scene.getMaterialPixelCount()

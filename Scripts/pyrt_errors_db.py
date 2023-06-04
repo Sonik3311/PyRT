@@ -1,0 +1,7 @@
+ERR_BAD_GROUP_NAME = "bad group name"
+ERR_EXPECTED_L_BRACKET = "expected ("
+ERR_EXPECTED_R_BRACKET = "expected }"
+ERR_EXPECTED_NUMBER = "expected number"
+ERR_EXPECTED_NEWLINE = "expected newline"
+ERR_EXPECTED_EQUALS = "expected ="
+ERR_UNEXPECTED_TOKEN = "unexpected token"

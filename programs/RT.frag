@@ -287,6 +287,53 @@ float myrefract(inout vec3 dir, vec3 n, float N) // return fres (N supposed to b
     return fres;
 }
 
+float FresnelSchlick(float nIn, float nOut, vec3 direction, vec3 normal)
+{
+    float R0 = ((nOut - nIn) * (nOut - nIn)) / ((nOut + nIn) * (nOut + nIn));
+    float fresnel = R0 + (1.0 - R0) * pow((1.0 - abs(dot(direction, normal))), 5.0);
+    return fresnel;
+}
+
+//----------------------------------------------------------------------------------------------------------
+// quaternions
+//----------------------------------------------------------------------------------------------------------
+
+vec3 Rotate(vec4 q, vec3 v) {
+    float x = q.x * 2.0;
+    float y = q.y * 2.0;
+    float z = q.z * 2.0;
+    float xx = q.x * x;
+    float yy = q.y * y;
+    float zz = q.z * z;
+    float xy = q.x * y;
+    float xz = q.x * z;
+    float yz = q.y * z;
+    float wx = q.w * x;
+    float wy = q.w * y;
+    float wz = q.w * z;
+
+    vec3 rotated;
+    rotated.x = (1f - (yy + zz)) * v.x + (xy - wz) * v.y + (xz + wy) * v.z;
+    rotated.y = (xy + wz) * v.x + (1f - (xx + zz)) * v.y + (yz - wx) * v.z;
+    rotated.z = (xz - wy) * v.x + (yz + wx) * v.y + (1f - (xx + yy)) * v.z;
+    return rotated;
+}
+
+vec4 Slerp(vec4 p0, vec4 p1, float t)
+{
+  float dotp = dot(normalize(p0), normalize(p1));
+  if ((dotp > 0.9999) || (dotp<-0.9999))
+  {
+    if (t<=0.5)
+      return p0;
+    return p1;
+  }
+  float theta = acos(dotp);
+  vec4 P = ((p0*sin((1-t)*theta) + p1*sin(t*theta)) / sin(theta));
+  P.w = 1;
+  return P;
+}
+
 //----------------------------------------------------------------------------------------------------------
 // path tracing
 //----------------------------------------------------------------------------------------------------------
@@ -302,7 +349,11 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
     for (int geometryIndex=0; geometryIndex<geometryCount; geometryIndex++){
         if (geometryIndex < sphereCount){
             vec2 geometryUV = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
+            
             vec4 sphere = texture(geometryTexture, geometryUV);
+            vec4 quaternion = texture(geometryTexture, quaternionUV); // bruh it's a perfect sphere, why would we need to rotate it?
+
             vec2 intersection = sphIntersect(ro-sphere.xyz, rd, sphere.w);
             if (intersection.x > 0 && minDist > intersection.x){
                 hitpoint = ro + rd*(intersection.x);
@@ -312,33 +363,38 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
                 hitObjID.y = geometryIndex;
                 hitObjID.z = pixelIndex;
             }
-            pixelIndex += 1;
+            pixelIndex += 2;
         } else if (sphereCount <= geometryIndex && geometryIndex < (sphereCount + cubeCount)){
             vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
             vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
 
             vec3 pos  = texture(geometryTexture, geometryUV1).xyz;
             vec3 size = texture(geometryTexture, geometryUV2).xyz;
-
-            vec2 intersection = boxIntersection(ro - pos, rd, size, tempNormal);
+            vec4 quaternion = texture(geometryTexture, quaternionUV);
+            // TODO: Rotations with proper normals
+            vec2 intersection = boxIntersection(ro-pos, rd, size, tempNormal);
             if (intersection.x > 0.0 && intersection.x < minDist){
                 hitpoint = ro + rd*(intersection.x);
                 minDist = intersection.x;
-                hitNormal = tempNormal;
+                hitNormal = tempNormal;//normalize(Rotate(Slerp(quaternion, vec4(0,0,0,1), 0), tempNormal).xyz);//quat_mult(quat_mult(quaternion, vec4(tempNormal,0)), quat_inverse(quaternion)).xyz; //q * v * q^-1
                 hitObjID.x = 2;
                 hitObjID.y = geometryIndex;
                 hitObjID.z = pixelIndex;
             }
-            pixelIndex += 2;
+            pixelIndex += 3;
         } else if ((sphereCount + cubeCount) <= geometryIndex && geometryIndex < (sphereCount + cubeCount + cylinderCount)){
             vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
             vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
             
             vec3 posA = texture(geometryTexture, geometryUV1).xyz;
             vec3 posB = texture(geometryTexture, geometryUV2).xyz;
-            float radius = texture(geometryTexture, geometryUV1).w;
+            vec3 median = mix(posA,posB,0.5);
+            float radius = texture(geometryTexture, geometryUV2).w;
+            vec4 quaternion = texture(geometryTexture, quaternionUV);
 
-            vec4 intersection = cylIntersect( ro, rd, posA, posB, radius );
+            vec4 intersection = cylIntersect(ro, rd, posA, posB, radius);
             if (intersection.x > 0.0 && intersection.x < minDist){
                 hitpoint = ro + rd*(intersection.x);
                 minDist = intersection.x;
@@ -347,28 +403,26 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
                 hitObjID.y = geometryIndex;
                 hitObjID.z = pixelIndex;
             }
-            pixelIndex += 2;
+            pixelIndex += 3;
         } else if ((sphereCount + cubeCount + cylinderCount) <= geometryIndex && geometryIndex < (sphereCount + cubeCount + cylinderCount + quadCount)){
             vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
             vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
             vec2 geometryUV3 = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+3.5) / geometryPixelCount, 0);
 
             vec4 pix1 = texture(geometryTexture, geometryUV1);
             vec4 pix2 = texture(geometryTexture, geometryUV2);
             vec4 pix3 = texture(geometryTexture, geometryUV3);
-            pixelIndex += 3;
+            vec4 quaternion = mix(texture(geometryTexture, quaternionUV),vec4(0,0,0,1), 0);
+            pixelIndex += 4;
 
             vec3 A = pix1.xyz;
             vec3 B = pix2.xyz;
             vec3 C = pix3.xyz;
             vec3 D = vec3(pix1.w, pix2.w, pix3.w);
-
-            //vec3( 0,-1,-1);
-            //vec3( 0, 1,-1);
-            //vec3( 0, 1, 1);
-            //vec3( 0,-1, 1);
                         
-
+           // vec4 quat = vec4(0.276,0.321,0.276,0.863);
+            //vec4 quat = vec4(0,0,0,1);
             vec4 intersection = quadIntersect(ro, rd, A,B,C,D);
             if (intersection.x > 0.0 && intersection.x < minDist){
                 hitpoint = ro + rd*(intersection.x);
@@ -434,7 +488,7 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
 
         duplicateRay.origin = hitpoint + (hitnormal * 0.001);
         vec3 refractDir = duplicateRay.direction;
-        float fres = myrefract(refractDir,hitnormal,1.5);
+        float fres = myrefract(refractDir,hitnormal,1.333);
         float choice = RandomFloat01(rngState);
         if (choice*hitMaterial.refractive > fres){ //refract
             duplicateRay.direction = mix(refractDir,normalize(hitnormal + RandomUnitVector(rngState)), hitMaterial.roughness);
@@ -498,10 +552,22 @@ void main()
 
     
     ray.direction = normalize( vec3( 0.7,norm_uv.yx ) );
+    
+    //ray.direction = Rotate(quat, ray.direction);
     ray.direction.xy *= rotate(u_mousePos.y);
     ray.direction.zx *= rotate(u_mousePos.x);
     
+    //materialStruct hitMaterial;
+    //vec3 hitpoint = vec3(0);
+    //vec3 hitnormal = vec3(0);
+    //bool raycastResult = raycast( ray.origin, ray.direction, hitMaterial, hitpoint, hitnormal );
+    //bool res = raycast
 
-    vec3 color = PathTrace(ray);//rayTraceSample(ray);
+    //vec3 color = vec3(0); ////rayTraceSample(ray);
+    //if (raycastResult == true){
+    //    //color = vec3(length(hitpoint-ray.origin))/20; //DEPTH
+    //    color = hitnormal;
+    //}
+    vec3 color = PathTrace(ray);
     fragColor = vec4(color,1.0);//texture(geometryTexture, vec2(float(0+2.5)/geometryPixelCount,0));//
 }
