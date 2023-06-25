@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.random import rand
+
 from objects import *
 from pyrt import PYRTManager
 from util import *
-
 
 class Scene:
     backup_material = Material(color=(1, 1, 1), specularColor=(1, 1, 1), roughness=0, metalness=0, emissive=0, refractive=0)
@@ -21,22 +21,19 @@ class Scene:
         self.groups = {}
         self.objects = {'spheres':[], 'cubes':[], 'cylinders':[], 'quads':[]}
         self.materials = {}
-        self.PYRTManager = PYRTManager(shape_handler=lambda *args, **kwargs: self.shapeCallback(*args, **kwargs),#self.shapeCallback, 
+        self.PYRTManager = PYRTManager(shape_handler=lambda *args, **kwargs: self.shapeCallback(*args, **kwargs),
                                        group_handler=lambda *args, **kwargs: self.groupCallback(*args, **kwargs),
-                                       material_handler=lambda *args, **kwargs: self.materialCallback(*args, **kwargs),)
+                                       material_handler=lambda *args, **kwargs: self.materialCallback(*args, **kwargs)
+        )
         
 
-    def shapeCallback(self, line, parent, type, position=VectorN((0, 0, 0)),
+    def shapeCallback(self, line, parent, type, position=VectorN((0, 0, 0)), 
                       rotation=VectorN((0, 0, 0)), size=None, material=backup_material, **kwargs):
-        #size = kwargs['size'] if 'size' in kwargs else None
-        #print("kwargs:", size, kwargs)
-        response = self.resolveLayerDependencies(parent, None)
 
         rotation = Quaternion.from_euler(*rotation)
         parent = self.groups[parent[len(parent)-1]] if len(parent) > 0 else None
         position = Vector3(*position)
         vertices = []
-        #size = None
 
         match type:
             case 'cube':
@@ -67,6 +64,7 @@ class Scene:
                 size = None
             case _:
                 raise NotImplementedError
+        
         geometry = Geometry(
             size=size,
             type=type,
@@ -80,9 +78,9 @@ class Scene:
     def groupCallback(self, line, parent, name, position=VectorN((0, 0, 0)), rotation=VectorN((0, 0, 0)), material=None):
         position = Vector3(position[0], position[1], position[2])
         rotation = Quaternion.from_euler(rotation[0], rotation[1], rotation[2])
-        
-        new_group = Group(position=position, rotation=rotation, parent=parent)
 
+        new_group = Group(position=position, rotation=rotation, parent=parent)
+        
         self.groups[name] = new_group
         
         return new_group
@@ -105,45 +103,20 @@ class Scene:
 
         self.PYRTManager.readFile(path)
 
-        self.packData()
-    
-    @classmethod
-    def resolveLayerDependencies(self, path, name):
-        path = path
-        if name is not None:
-            path += (name,)
-        #print("path:", path)
-            
-    
-        if len(path) == 0:
-            return True
-        
-        last = None
+        self.pack_data()
 
-        for i in range(len(path)):
-            groupName = path[i]
-
-            if not groupName in self.groups:
-                return False
-
-            self.groups[groupName].assignParent(last)
-            last = self.groups[groupName]
-
-        return True
-
-    def getObjectCount(self, countCategory=None, inPixels=False):
+    def get_object_count(self, count_category=None, in_pixels=False):
         lengths = {"spheres": 2, "cubes": 3, "cylinders": 3, "quads": 4}
-        objects = self.objects if countCategory is None else {countCategory: self.objects[countCategory]}
+        objects = self.objects if count_category is None else {count_category: self.objects[count_category]}
 
-        return sum([len(objects[category]) * lengths[category] if inPixels else len(objects[category]) for category in objects])
+        return sum([len(objects[category]) * lengths[category] if in_pixels else len(objects[category]) for category in objects])
     
-    def getMaterialPixelCount( self ):
+    def get_material_pixel_count(self):
          return sum([len(self.objects[category]) * 3 for category in self.objects])
     
-    def packData(self):
+    def pack_data(self):
         dataGeometry = b''
         dataMaterial = b''
-
 
         pixelDataMaterial = lambda object: (*object.material.color, 0,
                                             *object.material.specularColor, 0,
@@ -172,10 +145,13 @@ class Scene:
         }
         
         for objectType in self.objects:
+
             if objectType in pixelDataGeometry and len(self.objects[objectType]) > 0: 
                 objects = self.objects[objectType]
                 format_string = f"{len(pixelDataGeometry[objectType](objects[0]))}f"
+
                 for obj in objects:
                     dataGeometry += struct.pack(format_string, *pixelDataGeometry[objectType](obj))
                     dataMaterial += struct.pack('12f', *pixelDataMaterial(obj))
+
         return dataGeometry, dataMaterial

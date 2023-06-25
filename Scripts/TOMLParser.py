@@ -7,7 +7,7 @@ from coloredText import bcolors as colors
 
 class TOMLParser():
     tomlFiles = {}
-
+    
     def loadConfig( self, pathToFile:str, name="None" ):
         if name == "None":
             filename = re.split( pattern=r"[/\|/.//]", string=pathToFile )[-2]
@@ -17,6 +17,7 @@ class TOMLParser():
         except FileNotFoundError:
             print( f"{colors.HEADER}TOMLParser - {colors.FAIL}FileNotFoundError:{colors.ENDC} file {colors.OKBLUE}[{pathToFile}]{colors.ENDC} doesn't exist!")
             exit()
+
     def getValue( self, filename:str, name:list ):
         folders = name.split("/")
         value = self.tomlFiles[filename]

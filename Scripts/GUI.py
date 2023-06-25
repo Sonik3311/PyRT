@@ -1,12 +1,15 @@
 import imgui
 from moderngl_window.integrations.imgui import ModernglWindowRenderer
 
+# TODO: Rewrite needed
 
 class ImGUIManager:
     def __init__(self, app):
         self.app = app
         imgui.create_context()
         self.imgui = ModernglWindowRenderer(self.app.wnd)
+
+        self.isHidden = False
 
         self.openMenus = {
             "fileMenu": [False, {
@@ -28,7 +31,10 @@ class ImGUIManager:
             self.closeTree(node[1][nodes])
 
     def render(self):
+        if self.isHidden:
+            return
         imgui.new_frame()
+        
         changedSettings = False
         # Render each Window (garbage)
         if imgui.begin(

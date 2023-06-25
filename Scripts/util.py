@@ -72,6 +72,12 @@ class Vector3:
                 return Vector3(self.x + other, self.y + other, self.z + other)
             case _:
                 raise ValueError
+    
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
 
     def __sub__(self, other: 'Vector3 | float | int'):
         match other:
@@ -82,8 +88,14 @@ class Vector3:
             case _:
                 raise ValueError
 
-    def __mul__(self, other: 'Vector3 | float | int'):
+    def __mul__(self, other: 'Quaternion | Vector3 | float | int'):
         match other:
+            case Quaternion():
+                u = Vector3(other.x, other.y, other.z)
+                v = Vector3(self.x, self.y, self.z)
+                s = other.w
+                vprime = u * u.dot(v) * 2.0 + v * (s*s - u.dot(u)) + u.cross(v) * 2.0 * s
+                return vprime
             case Vector3():
                 return Vector3(self.x * other.x, self.y * other.y, self.z * other.z)
             case float() | int():
@@ -432,15 +444,29 @@ class Quaternion:
                 )
             case Quaternion():
                 return Quaternion(
-                    self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y,
-                    self.w * other.y + self.y * other.w + self.z * other.x - self.x * other.z,
-                    self.w * other.z + self.z * other.w + self.x * other.y - self.y * other.x,
-                    self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
+                    x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y,
+                    y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x,
+                    z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w,
+                    w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
                 )
+                
+                # x = w0 * x1 + x0 * w1 + y0 * z1 - z0 * y1
+                # y = w0 * y1 - x0 * z1 + y0 * w1 + z0 * x1
+                # z = w0 * z1 + x0 * y1 - y0 * x1 + z0 * w1
+                # w = w0 * w1 - x0 * x1 - y0 * y1 - z0 * z1
+            
             case Vector3() | Transform():
-                return self.xform(other)
+                q = self * Quaternion(other.x, other.y, other.z, w=0)
+                return Vector3(x=q.x, y=q.y, z=q.z)
             case _:
                 raise ValueError
+    def hamilton(self, other): # for multiple multiplications in one line
+        return Quaternion(
+                    x = self.w * other.x + self.x * other.w + self.y * other.z - self.z * other.y,
+                    y = self.w * other.y - self.x * other.z + self.y * other.w + self.z * other.x,
+                    z = self.w * other.z + self.x * other.y - self.y * other.x + self.z * other.w,
+                    w = self.w * other.w - self.x * other.x - self.y * other.y - self.z * other.z
+                )
 
     def __truediv__(self, other: float):
         s = 1.0 / other

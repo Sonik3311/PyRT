@@ -1,0 +1,77 @@
+$group Scene ( position = (0, 0, 0), rotation = (0, deg2rad(0), 0))
+
+$const HEIGHT = 4
+$const WIDTH = 2
+$const LENGTH = 1
+
+# x = width
+# y = height
+# z = length
+
+$material BoxMaterial (
+    color = (0.9, 0.3, 0.3),
+    specularColor = (0.9, 0.3, 0.3),
+    roughness = 0.1,
+    metalness = 1,
+    emissive = 0,
+    refractive = 1
+)
+# top
+Scene:quad(
+    bottomLeft  = (-WIDTH/2, HEIGHT/2, -LENGTH/2),
+    bottomRight = (-WIDTH/2, HEIGHT/2,  LENGTH/2),
+    topRight    = (WIDTH/2, HEIGHT/2,  LENGTH/2),
+    topLeft     = (WIDTH/2, HEIGHT/2, -LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)
+
+## bottom
+Scene:quad(
+    bottomLeft  = (-WIDTH/2, -HEIGHT/2, -LENGTH/2),
+    bottomRight = (-WIDTH/2, -HEIGHT/2,  LENGTH/2),
+    topRight    = (WIDTH/2, -HEIGHT/2,  LENGTH/2),
+    topLeft     = (WIDTH/2, -HEIGHT/2, -LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)
+
+# Width side 1
+Scene:quad(
+    bottomLeft  = (-WIDTH/2, -HEIGHT/2, -LENGTH/2),
+    bottomRight = (-WIDTH/2, -HEIGHT/2,  LENGTH/2),
+    topRight    = (-WIDTH/2, HEIGHT/2,  LENGTH/2),
+    topLeft     = (-WIDTH/2, HEIGHT/2, -LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)
+
+# Width side 2
+Scene:quad(
+    bottomLeft  = (WIDTH/2, -HEIGHT/2, -LENGTH/2),
+    bottomRight = (WIDTH/2, -HEIGHT/2,  LENGTH/2),
+    topRight    = (WIDTH/2, HEIGHT/2,  LENGTH/2),
+    topLeft     = (WIDTH/2, HEIGHT/2, -LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)
+
+# LENGTH side 1
+Scene:quad(
+    bottomLeft  = (-WIDTH/2, -HEIGHT/2, -LENGTH/2),
+    bottomRight = (WIDTH/2, -HEIGHT/2,  -LENGTH/2),
+    topRight    = (WIDTH/2, HEIGHT/2,  -LENGTH/2),
+    topLeft     = (-WIDTH/2, HEIGHT/2, -LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)
+
+# LENGTH side 2
+Scene:quad(
+    bottomLeft  = (-WIDTH/2, -HEIGHT/2, LENGTH/2),
+    bottomRight = (WIDTH/2, -HEIGHT/2,  LENGTH/2),
+    topRight    = (WIDTH/2, HEIGHT/2,  LENGTH/2),
+    topLeft     = (-WIDTH/2, HEIGHT/2, LENGTH/2),
+    rotation = (0, deg2rad(0), 0),
+    material = BoxMaterial,
+)

@@ -1,0 +1,242 @@
+$group Scene(position=(0,0,0), rotation=(0,0,0))
+
+$material DiffuseWhite(
+    color = (0.9, 0.9, 0.9),
+    specularColor = (0.9, 0.3, 0.3),
+    roughness = 0,
+    metalness = 0,
+    emissive = 0,
+    refractive = 0
+)
+Scene:quad(
+    bottomLeft  = (-30, -10, -30),
+    bottomRight = (-30, -10,  30),
+    topRight    = (30, -10,  30),
+    topLeft     = (30, -10, -30),
+    rotation = (0, 0, 0),
+    material = DiffuseWhite,
+)
+Scene:quad(
+    bottomLeft  = (-30, 10, -30),
+    bottomRight = (-30, 10,  30),
+    topRight    = (30, 10,  30),
+    topLeft     = (30, 10, -30),
+    rotation = (0, 0, 0),
+    material = DiffuseWhite,
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,-30.0),
+    bottomPosition=(-30.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,-20.0),
+    bottomPosition=(-30.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,-10.0),
+    bottomPosition=(-30.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,0.0),
+    bottomPosition=(-30.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,10.0),
+    bottomPosition=(-30.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-30.0,-10,20.0),
+    bottomPosition=(-30.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,-30.0),
+    bottomPosition=(-20.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,-20.0),
+    bottomPosition=(-20.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,-10.0),
+    bottomPosition=(-20.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,0.0),
+    bottomPosition=(-20.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,10.0),
+    bottomPosition=(-20.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-20.0,-10,20.0),
+    bottomPosition=(-20.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,-30.0),
+    bottomPosition=(-10.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,-20.0),
+    bottomPosition=(-10.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,-10.0),
+    bottomPosition=(-10.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,0.0),
+    bottomPosition=(-10.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,10.0),
+    bottomPosition=(-10.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(-10.0,-10,20.0),
+    bottomPosition=(-10.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,-30.0),
+    bottomPosition=(0.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,-20.0),
+    bottomPosition=(0.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,-10.0),
+    bottomPosition=(0.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,0.0),
+    bottomPosition=(0.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,10.0),
+    bottomPosition=(0.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(0.0,-10,20.0),
+    bottomPosition=(0.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,-30.0),
+    bottomPosition=(10.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,-20.0),
+    bottomPosition=(10.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,-10.0),
+    bottomPosition=(10.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,0.0),
+    bottomPosition=(10.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,10.0),
+    bottomPosition=(10.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(10.0,-10,20.0),
+    bottomPosition=(10.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,-30.0),
+    bottomPosition=(20.0, 10,-30.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,-20.0),
+    bottomPosition=(20.0, 10,-20.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,-10.0),
+    bottomPosition=(20.0, 10,-10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,0.0),
+    bottomPosition=(20.0, 10,0.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,10.0),
+    bottomPosition=(20.0, 10,10.0),
+    size=1,
+    material=DiffuseWhite
+)
+Scene:cylinder(
+    topPosition=(20.0,-10,20.0),
+    bottomPosition=(20.0, 10,20.0),
+    size=1,
+    material=DiffuseWhite
+)

@@ -5,24 +5,24 @@ out vec4 fragColor;
 
 uniform vec2 u_resolution;
 uniform int u_frame;
-uniform int maxSamples;
-uniform int maxReflections;
-uniform int skyboxType;
+uniform int u_max_samples;
+uniform int u_max_reflections;
+uniform int u_skybox_type;
 
 uniform vec2 u_mousePos;
 uniform vec3 u_cameraPos;
 
-uniform sampler2D geometryTexture;
-uniform sampler2D materialTexture;
-uniform sampler2D skybox;
+uniform sampler2D u_geometry_texture;
+uniform sampler2D u_material_texture;
+uniform sampler2D u_skybox_texture;
 
-uniform int geometryCount;
-uniform int geometryPixelCount;
+uniform int u_geometry_count;
+uniform int u_geometry_pixel_count;
 
-uniform int sphereCount;
-uniform int cubeCount;
-uniform int cylinderCount;
-uniform int quadCount;
+uniform int u_sphere_count;
+uniform int u_cube_count;
+uniform int u_cylinder_count;
+uniform int u_quad_count;
 
 
 
@@ -342,17 +342,17 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
     float minDist = 99999;
     vec3 tempNormal;
 
-    int materialPixelCount = geometryCount * 3;
+    int materialPixelCount = u_geometry_count * 3;
     vec3 hitObjID; //x=type,y=geometryIndex,z=pixelIndex
     
     int pixelIndex = 0;
-    for (int geometryIndex=0; geometryIndex<geometryCount; geometryIndex++){
-        if (geometryIndex < sphereCount){
-            vec2 geometryUV = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
-            vec2 quaternionUV = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
+    for (int geometryIndex=0; geometryIndex<u_geometry_count; geometryIndex++){
+        if (geometryIndex < u_sphere_count){
+            vec2 geometryUV = vec2(float(pixelIndex+0.5) / u_geometry_pixel_count, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+1.5) / u_geometry_pixel_count, 0);
             
-            vec4 sphere = texture(geometryTexture, geometryUV);
-            vec4 quaternion = texture(geometryTexture, quaternionUV); // bruh it's a perfect sphere, why would we need to rotate it?
+            vec4 sphere = texture(u_geometry_texture, geometryUV);
+            vec4 quaternion = texture(u_geometry_texture, quaternionUV); // bruh it's a perfect sphere, why would we need to rotate it?
 
             vec2 intersection = sphIntersect(ro-sphere.xyz, rd, sphere.w);
             if (intersection.x > 0 && minDist > intersection.x){
@@ -364,14 +364,14 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
                 hitObjID.z = pixelIndex;
             }
             pixelIndex += 2;
-        } else if (sphereCount <= geometryIndex && geometryIndex < (sphereCount + cubeCount)){
-            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
-            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
-            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
+        } else if (u_sphere_count <= geometryIndex && geometryIndex < (u_sphere_count + u_cube_count)){
+            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / u_geometry_pixel_count, 0);
+            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / u_geometry_pixel_count, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / u_geometry_pixel_count, 0);
 
-            vec3 pos  = texture(geometryTexture, geometryUV1).xyz;
-            vec3 size = texture(geometryTexture, geometryUV2).xyz;
-            vec4 quaternion = texture(geometryTexture, quaternionUV);
+            vec3 pos  = texture(u_geometry_texture, geometryUV1).xyz;
+            vec3 size = texture(u_geometry_texture, geometryUV2).xyz;
+            vec4 quaternion = texture(u_geometry_texture, quaternionUV);
             // TODO: Rotations with proper normals
             vec2 intersection = boxIntersection(ro-pos, rd, size, tempNormal);
             if (intersection.x > 0.0 && intersection.x < minDist){
@@ -383,16 +383,16 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
                 hitObjID.z = pixelIndex;
             }
             pixelIndex += 3;
-        } else if ((sphereCount + cubeCount) <= geometryIndex && geometryIndex < (sphereCount + cubeCount + cylinderCount)){
-            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
-            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
-            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
+        } else if ((u_sphere_count + u_cube_count) <= geometryIndex && geometryIndex < (u_sphere_count + u_cube_count + u_cylinder_count)){
+            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / u_geometry_pixel_count, 0);
+            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / u_geometry_pixel_count, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+2.5) / u_geometry_pixel_count, 0);
             
-            vec3 posA = texture(geometryTexture, geometryUV1).xyz;
-            vec3 posB = texture(geometryTexture, geometryUV2).xyz;
+            vec3 posA = texture(u_geometry_texture, geometryUV1).xyz;
+            vec3 posB = texture(u_geometry_texture, geometryUV2).xyz;
             vec3 median = mix(posA,posB,0.5);
-            float radius = texture(geometryTexture, geometryUV2).w;
-            vec4 quaternion = texture(geometryTexture, quaternionUV);
+            float radius = texture(u_geometry_texture, geometryUV2).w;
+            vec4 quaternion = texture(u_geometry_texture, quaternionUV);
 
             vec4 intersection = cylIntersect(ro, rd, posA, posB, radius);
             if (intersection.x > 0.0 && intersection.x < minDist){
@@ -404,16 +404,16 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
                 hitObjID.z = pixelIndex;
             }
             pixelIndex += 3;
-        } else if ((sphereCount + cubeCount + cylinderCount) <= geometryIndex && geometryIndex < (sphereCount + cubeCount + cylinderCount + quadCount)){
-            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / geometryPixelCount, 0);
-            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / geometryPixelCount, 0);
-            vec2 geometryUV3 = vec2(float(pixelIndex+2.5) / geometryPixelCount, 0);
-            vec2 quaternionUV = vec2(float(pixelIndex+3.5) / geometryPixelCount, 0);
+        } else if ((u_sphere_count + u_cube_count + u_cylinder_count) <= geometryIndex && geometryIndex < (u_sphere_count + u_cube_count + u_cylinder_count + u_quad_count)){
+            vec2 geometryUV1 = vec2(float(pixelIndex+0.5) / u_geometry_pixel_count, 0);
+            vec2 geometryUV2 = vec2(float(pixelIndex+1.5) / u_geometry_pixel_count, 0);
+            vec2 geometryUV3 = vec2(float(pixelIndex+2.5) / u_geometry_pixel_count, 0);
+            vec2 quaternionUV = vec2(float(pixelIndex+3.5) / u_geometry_pixel_count, 0);
 
-            vec4 pix1 = texture(geometryTexture, geometryUV1);
-            vec4 pix2 = texture(geometryTexture, geometryUV2);
-            vec4 pix3 = texture(geometryTexture, geometryUV3);
-            vec4 quaternion = mix(texture(geometryTexture, quaternionUV),vec4(0,0,0,1), 0);
+            vec4 pix1 = texture(u_geometry_texture, geometryUV1);
+            vec4 pix2 = texture(u_geometry_texture, geometryUV2);
+            vec4 pix3 = texture(u_geometry_texture, geometryUV3);
+            vec4 quaternion = mix(texture(u_geometry_texture, quaternionUV),vec4(0,0,0,1), 0);
             pixelIndex += 4;
 
             vec3 A = pix1.xyz;
@@ -440,9 +440,9 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
         vec2 materialUV2 = vec2(float(hitObjID.y*3+1.5) / materialPixelCount);
         vec2 materialUV3 = vec2(float(hitObjID.y*3+2.5) / materialPixelCount);
 
-        vec4 materialPixel1 = texture(materialTexture, materialUV1);
-        vec4 materialPixel2 = texture(materialTexture, materialUV2);
-        vec4 materialPixel3 = texture(materialTexture, materialUV3);
+        vec4 materialPixel1 = texture(u_material_texture, materialUV1);
+        vec4 materialPixel2 = texture(u_material_texture, materialUV2);
+        vec4 materialPixel3 = texture(u_material_texture, materialUV3);
 
         hitMaterial.albedo = materialPixel1.rgb;
         hitMaterial.specularColor = materialPixel2.rgb;
@@ -458,12 +458,12 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
 
 vec3 getSkyboxColor( in vec3 rd ){
     vec3 col;
-    if (skyboxType == 0){
+    if (u_skybox_type == 0){
         vec2 uv = vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI);
         col = vec3(max(sin(uv.x*100)*100 * cos(uv.y*100)*100,0), 0, max(sin(uv.x*100)*100 * cos(uv.y*100)*100,0)); 
         //col = vec3(0);
-    } else if (skyboxType == 1) {
-        col = texture(skybox, vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI)).xyz;
+    } else if (u_skybox_type == 1) {
+        col = texture(u_skybox_texture, vec2(0.5 + atan(rd.x, rd.z)/(2*PI), 0.5 + asin(-rd.y)/PI)).xyz;
     }
     return col;
 }
@@ -477,7 +477,7 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
     struct materialStruct hitMaterial;
     vec3 hitpoint;
     vec3 hitnormal;
-    for (int relfections=0; relfections<maxReflections; relfections++){
+    for (int relfections=0; relfections<u_max_reflections; relfections++){
         bool raycastResult = raycast( duplicateRay.origin, duplicateRay.direction, hitMaterial, hitpoint, hitnormal );
         if (raycastResult == false){ //no hit
             color += SRGBToLinear(getSkyboxColor(duplicateRay.direction))    * rayColor;
@@ -521,10 +521,10 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
 
 vec3 PathTrace(rayStruct ray){
     vec3 color = vec3(0);
-    for (int smpl=0; smpl<maxSamples; smpl++){
+    for (int smpl=0; smpl<u_max_samples; smpl++){
         color += rayTraceSample(ray, smpl).rgb;
     }
-    return color / maxSamples;
+    return color / u_max_samples;
 }
 
 
@@ -569,5 +569,5 @@ void main()
     //    color = hitnormal;
     //}
     vec3 color = PathTrace(ray);
-    fragColor = vec4(color,1.0);//texture(geometryTexture, vec2(float(0+2.5)/geometryPixelCount,0));//
+    fragColor = vec4(color,1.0);//texture(u_geometry_texture, vec2(float(0+2.5)/u_geometry_pixel_count,0));//
 }

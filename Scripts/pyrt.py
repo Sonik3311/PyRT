@@ -15,10 +15,6 @@ class PYRTManager:
         self.interpreter.group_handler = group_handler
         self.interpreter.material_handler = material_handler
 
-        print(self.interpreter.material_handler)
-        print(self.interpreter.group_handler)
-        print(self.interpreter.shape_handler)
-
         self.interpreter.env_functions = {
             "deg2rad": lambda x: x / 180 * pi,
         }

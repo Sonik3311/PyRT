@@ -4,9 +4,12 @@ title = "Window"
 GLversion = [4,6]
 resizable = false
 
+[APP]
+shaderPath = "programs"
+
 [RT]
 samples     = 2
 reflections = 6
-accumframes = false
-skyboxpath  = "../skyboxes/skybox.jpg"
-scenepath   = "../scenes/scene.pyrt"
+accumframes = true
+skyboxpath  = "skyboxes/planet6.png"
+scenepath   = "scenes/towers.pyrt"
