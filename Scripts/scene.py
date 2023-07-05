@@ -80,7 +80,7 @@ class Scene:
         rotation = Quaternion.from_euler(rotation[0], rotation[1], rotation[2])
 
         new_group = Group(position=position, rotation=rotation, parent=parent)
-        
+        print(rotation)
         self.groups[name] = new_group
         
         return new_group

@@ -31,7 +31,7 @@ class Group:
     def assignParent(self, parent):
 
         if parent != None:
-            self.rotation = self.rotation * parent.rotation
+            self.rotation = parent.rotation.hamilton(self.rotation)
 
             #rotate
             v = Quaternion(x=self.position.x, y=self.position.y, z=self.position.z, w=0)
@@ -40,6 +40,7 @@ class Group:
             #translate
             point += parent.position
             self.position = point
+
             
 
         self.parent = parent
@@ -71,39 +72,25 @@ class Geometry:
         g = self.group
         self.group = None
         self.assignGroup(g)
+    
+    def rotatePointAround(self, point, pivot, quat):
+        local_v = point - pivot
+        v_q = Quaternion(x = local_v.x, y = local_v.y, z = local_v.z, w = 0)
+        rotated_v_q = (quat.hamilton(v_q)).hamilton(quat.inverted())
+        rotated_local_v = Vector3(x = rotated_v_q.x, y = rotated_v_q.y, z = rotated_v_q.z)
+        rotated_v = rotated_local_v + pivot
+        return rotated_v
+            
 
     def assignGroup(self, group):
-        # for in-app editing
-        """
-        if self.group != None: # convert to world space if in local space
-            #if self.type.lower() in ('cube', 'sphere'):
-            #    self.rotation = self.group.rotation * self.rotation
-            for i in range(len(self.vertices)):
-                self.vertices[i] = (self.vertices[i] - self.group.position)
-                rotated = self.group.rotation.inverted() * Quaternion(self.vertices[i].x, self.vertices[i].y, self.vertices[i].z, 0) * self.group.rotation
-                self.vertices[i].x = rotated.x
-                self.vertices[i].y = rotated.y
-                self.vertices[i].z = rotated.z
-        """
-
-        # convert to local space of the new group if not world 
         if group != None: 
             medianVecGeometry = sum(self.vertices) / len(self.vertices)
             for i,vertex in enumerate(self.vertices):
-                #local
-                pivot = vertex-medianVecGeometry
-                v = Quaternion(pivot.x, pivot.y, pivot.z, w=0)
-                pointQ = (self.rotation.hamilton(v)).hamilton(self.rotation.inverted())
-                point = Vector3(pointQ.x, pointQ.y, pointQ.z) + medianVecGeometry
-                #global
-                v = Quaternion(point.x, point.y, point.z, w=0)
-                pointQ = (group.rotation.hamilton(v)).hamilton(group.rotation.inverted())
-                point = Vector3(pointQ.x, pointQ.y, pointQ.z) 
-                #translate
-                point += group.position
+                rotated_v = self.rotatePointAround(vertex, medianVecGeometry, self.rotation)
+                rotated_local_v = self.rotatePointAround(Vector3(rotated_v.x, rotated_v.y, rotated_v.z), Vector3(0,0,0), group.rotation)
+                
+                v = Vector3(rotated_local_v.x, rotated_local_v.y, rotated_local_v.z)
+                point = v + group.position
                 self.vertices[i] = point
-
-            self.rotation = self.rotation.hamilton(group.rotation)
-
-            
+            self.rotation = group.rotation.hamilton(self.rotation)  
         self.group = group

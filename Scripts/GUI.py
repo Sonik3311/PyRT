@@ -17,7 +17,8 @@ class ImGUIManager:
                 "openSkybox": [False, {}]
             }],
             "settingsMenu": [False, {
-                "render": [False, {}]
+                "render": [False, {}],
+                "postFX": [False, {}]
             }],
         }
 
@@ -36,6 +37,7 @@ class ImGUIManager:
         imgui.new_frame()
         
         changedSettings = False
+        changedSecondarySettings = False
         # Render each Window (garbage)
         if imgui.begin(
             "mainMenu",
@@ -114,7 +116,6 @@ class ImGUIManager:
             if changed:
                 self.app.settings.rt_skyboxpath = text
             if imgui.button(label="Apply"):
-                #self.app.scene.importFromFile(self.app.settings.rt_skyboxpath)
                 self.app.createSkybox()
             
             imgui.end()
@@ -129,7 +130,15 @@ class ImGUIManager:
             | imgui.WINDOW_NO_SCROLLBAR,
         ):
             if imgui.button(label="Render"):
-                self.openMenus["settingsMenu"][1]["render"][0] = not self.openMenus["settingsMenu"][1]["render"][0]
+                state = self.openMenus["settingsMenu"][1]["render"][0]
+                self.closeTree_exclude_startNode(self.openMenus["settingsMenu"])
+                self.openMenus["settingsMenu"][1]["render"][0] = not state
+                
+            if imgui.button(label="postFX"):
+                state = self.openMenus["settingsMenu"][1]["postFX"][0]
+                self.closeTree_exclude_startNode(self.openMenus["settingsMenu"])
+                self.openMenus["settingsMenu"][1]["postFX"][0] = not state
+                
             imgui.end()
 
         ##############################################################################
@@ -165,11 +174,30 @@ class ImGUIManager:
             imgui.pop_item_width()
             imgui.end()
         
+        if self.openMenus["settingsMenu"][1]["postFX"][0] and imgui.begin(
+            "Post Effects Settings",
+            flags=imgui.WINDOW_NO_TITLE_BAR
+            | imgui.WINDOW_NO_MOVE
+            | imgui.WINDOW_NO_RESIZE
+            | imgui.WINDOW_NO_SCROLLBAR,
+        ):
+            imgui.push_item_width(40)
+            changedexp, exposure = imgui.input_float(
+                "Exposure", max(self.app.settings.rtfx_exposure, 1), step=0
+            )
+            if changedexp:
+                self.app.settings.rtfx_exposure = min(max(exposure,0), 10000)
+                changedSecondarySettings = True
+            imgui.pop_item_width()
+            imgui.end()
+        
 
         
 
         if changedSettings:
             self.app.updateRTuniforms()
+        if changedSecondarySettings:
+            self.app.updateRTFXuniforms()
 
         imgui.render()
         self.imgui.render(imgui.get_draw_data())

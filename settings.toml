@@ -12,4 +12,7 @@ samples     = 2
 reflections = 6
 accumframes = true
 skyboxpath  = "skyboxes/planet6.png"
-scenepath   = "scenes/towers.pyrt"
+scenepath   = "scenes/scene.pyrt"
+
+[RTFX]
+exposure = 1

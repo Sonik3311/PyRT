@@ -4,6 +4,7 @@ in vec2 v_uv;
 out vec4 fragColor;
 
 uniform sampler2D rtTexture;
+uniform float u_exposure;
 
 //----------------------------------------------------------------------------------------------------------
 // tonemap (credits to Casual shadertoy Path tracing)
@@ -59,7 +60,7 @@ float c_exposure = 2;
 void main()
 {
     vec3 rtColor = texture( rtTexture, v_uv ).rgb;
-    rtColor *= c_exposure;
+    rtColor *= u_exposure;
     rtColor = ACESFilm(rtColor);
     rtColor = LinearToSRGB(rtColor);//mix(rtColor.rgb, pgColor.rgb, pgColor.a);
     fragColor = vec4( rtColor, 1.0 );

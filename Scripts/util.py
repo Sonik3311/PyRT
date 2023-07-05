@@ -334,22 +334,35 @@ class Quaternion:
 
     @staticmethod
     def from_euler(x: float, y: float, z: float):
-        half_a1 = y * 0.5
-        half_a2 = x * 0.5
-        half_a3 = z * 0.5
-
-        cos_a1 = cos(half_a1)
-        sin_a1 = sin(half_a1)
-        cos_a2 = cos(half_a2)
-        sin_a2 = sin(half_a2)
-        cos_a3 = cos(half_a3)
-        sin_a3 = sin(half_a3)
+        #half_a1 = y * 0.5
+        #half_a2 = x * 0.5
+        #half_a3 = z * 0.5
+#
+        #cos_a1 = cos(half_a1)
+        #sin_a1 = sin(half_a1)
+        #cos_a2 = cos(half_a2)
+        #sin_a2 = sin(half_a2)
+        #cos_a3 = cos(half_a3)
+        #sin_a3 = sin(half_a3)
+#
+        #return Quaternion(
+        #    sin_a1 * cos_a2 * sin_a3 + cos_a1 * sin_a2 * cos_a3,
+        #    sin_a1 * cos_a2 * cos_a3 - cos_a1 * sin_a2 * sin_a3,
+        #    -sin_a1 * sin_a2 * cos_a3 + cos_a1 * cos_a2 * sin_a3,
+        #    sin_a1 * sin_a2 * sin_a3 + cos_a1 * cos_a2 * cos_a3
+        #)
+        cx = cos(x * 0.5)
+        sx = sin(x * 0.5)
+        cy = cos(y * 0.5)
+        sy = sin(y * 0.5)
+        cz = cos(z * 0.5)
+        sz = sin(z * 0.5)
 
         return Quaternion(
-            sin_a1 * cos_a2 * sin_a3 + cos_a1 * sin_a2 * cos_a3,
-            sin_a1 * cos_a2 * cos_a3 - cos_a1 * sin_a2 * sin_a3,
-            -sin_a1 * sin_a2 * cos_a3 + cos_a1 * cos_a2 * sin_a3,
-            sin_a1 * sin_a2 * sin_a3 + cos_a1 * cos_a2 * cos_a3
+            w = cx * cy * cz + sx * sy * sz, 
+            x = sx * cy * cz - cx * sy * sz, 
+            y = cx * sy * cz + sx * cy * sz, 
+            z = cx * cy * sz - sx * sy * cz
         )
 
     def dot(self, other: 'Quaternion'):

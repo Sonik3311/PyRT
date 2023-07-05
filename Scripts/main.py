@@ -27,6 +27,8 @@ class Settings:
     rt_skyboxpath = TOMLParser.getValue("settings", "RT/skyboxpath")
     rt_scenepath = TOMLParser.getValue("settings", "RT/scenepath")
 
+    rtfx_exposure = TOMLParser.getValue("settings", "RTFX/exposure")
+
     app_shaderPath = TOMLParser.getValue("settings", "APP/shaderPath")
 
 
@@ -109,6 +111,7 @@ class App(mglw.WindowConfig):
         self.set_uniform("RT", "u_skybox_texture", 4)
 
         self.updateRTuniforms()
+        self.updateRTFXuniforms()
         self.updateCameraUniforms()
 
         print(f"{colors.HEADER}initUniforms{colors.ENDC} - {colors.OKGREEN}Success{colors.ENDC}")
@@ -194,6 +197,9 @@ class App(mglw.WindowConfig):
         
         self.set_uniform("RT", "u_max_samples", self.settings.rt_samples)
         self.set_uniform("RT", "u_max_reflections", self.settings.rt_reflections)
+    
+    def updateRTFXuniforms(self):
+        self.set_uniform("pygameBlit", "u_exposure", self.settings.rtfx_exposure)
 
     def updateCameraUniforms(self):
         self.frames = 0

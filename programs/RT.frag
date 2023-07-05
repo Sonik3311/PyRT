@@ -298,25 +298,45 @@ float FresnelSchlick(float nIn, float nOut, vec3 direction, vec3 normal)
 // quaternions
 //----------------------------------------------------------------------------------------------------------
 
-vec3 Rotate(vec4 q, vec3 v) {
-    float x = q.x * 2.0;
-    float y = q.y * 2.0;
-    float z = q.z * 2.0;
-    float xx = q.x * x;
-    float yy = q.y * y;
-    float zz = q.z * z;
-    float xy = q.x * y;
-    float xz = q.x * z;
-    float yz = q.y * z;
-    float wx = q.w * x;
-    float wy = q.w * y;
-    float wz = q.w * z;
+//vec3 Rotate(vec4 q, vec3 v) {
+//    float x = q.x * 2.0;
+//    float y = q.y * 2.0;
+//    float z = q.z * 2.0;
+//    float xx = q.x * x;
+//    float yy = q.y * y;
+//    float zz = q.z * z;
+//    float xy = q.x * y;
+//    float xz = q.x * z;
+//    float yz = q.y * z;
+//    float wx = q.w * x;
+//    float wy = q.w * y;
+//    float wz = q.w * z;
+//
+//    vec3 rotated;
+//    rotated.x = (1f - (yy + zz)) * v.x + (xy - wz) * v.y + (xz + wy) * v.z;
+//    rotated.y = (xy + wz) * v.x + (1f - (xx + zz)) * v.y + (yz - wx) * v.z;
+//    rotated.z = (xz - wy) * v.x + (yz + wx) * v.y + (1f - (xx + yy)) * v.z;
+//    return rotated;
+//}
 
-    vec3 rotated;
-    rotated.x = (1f - (yy + zz)) * v.x + (xy - wz) * v.y + (xz + wy) * v.z;
-    rotated.y = (xy + wz) * v.x + (1f - (xx + zz)) * v.y + (yz - wx) * v.z;
-    rotated.z = (xz - wy) * v.x + (yz + wx) * v.y + (1f - (xx + yy)) * v.z;
-    return rotated;
+vec4 Q_rotate(vec4 q1, vec4 q2){
+    vec4 q;
+    q.x = (q1.w * q2.x) + (q1.x * q2.w) + (q1.y * q2.z) - (q1.z * q2.y);
+    q.y = (q1.w * q2.y) - (q1.x * q2.z) + (q1.y * q2.w) + (q1.z * q2.x);
+    q.z = (q1.w * q2.z) + (q1.x * q2.y) - (q1.y * q2.x) + (q1.z * q2.w);
+    q.w = (q1.w * q2.w) - (q1.x * q2.x) - (q1.y * q2.y) - (q1.z * q2.z);
+    return q;
+}
+
+vec4 Q_inverse(vec4 q){
+    return vec4(-q.xyz, q.w);
+}
+
+vec3 q_rotate_v(vec4 q, vec3 v){
+    vec4 qv = vec4(v, 0);
+    vec4 qi = Q_inverse(q);
+    vec4 mult = Q_rotate(Q_rotate(q, qv), qi); // q * qv * qi
+    return mult.xyz;
 }
 
 vec4 Slerp(vec4 p0, vec4 p1, float t)
@@ -373,11 +393,15 @@ bool raycast( in vec3 ro, in vec3 rd, out materialStruct hitMaterial, out vec3 h
             vec3 size = texture(u_geometry_texture, geometryUV2).xyz;
             vec4 quaternion = texture(u_geometry_texture, quaternionUV);
             // TODO: Rotations with proper normals
-            vec2 intersection = boxIntersection(ro-pos, rd, size, tempNormal);
+            vec3 qro = q_rotate_v(Q_inverse(quaternion), ro-pos);//Rotate(quaternion, ro-pos);
+            vec3 qrd = q_rotate_v(Q_inverse(quaternion), rd);//Rotate(quaternion, rd);
+
+            vec2 intersection = boxIntersection(qro, qrd, size, tempNormal);
             if (intersection.x > 0.0 && intersection.x < minDist){
-                hitpoint = ro + rd*(intersection.x);
+                vec4 invQ = Q_inverse(quaternion);
+                hitpoint = q_rotate_v(quaternion, qro) + pos + q_rotate_v(quaternion,qrd)*(intersection.x);
                 minDist = intersection.x;
-                hitNormal = tempNormal;//normalize(Rotate(Slerp(quaternion, vec4(0,0,0,1), 0), tempNormal).xyz);//quat_mult(quat_mult(quaternion, vec4(tempNormal,0)), quat_inverse(quaternion)).xyz; //q * v * q^-1
+                hitNormal = q_rotate_v(quaternion, tempNormal);//normalize(Rotate(Slerp(quaternion, vec4(0,0,0,1), 0), tempNormal).xyz);//quat_mult(quat_mult(quaternion, vec4(tempNormal,0)), quat_inverse(quaternion)).xyz; //q * v * q^-1
                 hitObjID.x = 2;
                 hitObjID.y = geometryIndex;
                 hitObjID.z = pixelIndex;
@@ -503,15 +527,6 @@ vec3 rayTraceSample( in rayStruct ray, in int smple ){
             duplicateRay.direction = mix(diffuseDir, specularDir, doSpecular);
             rayColor *= mix(hitMaterial.albedo, hitMaterial.specularColor, doSpecular);
         }
-        
-
-        
-
-        /*float doSpecular = (RandomFloat01(rngState) < hitMaterial.metallness) ? 1.0 : 0.0;
-        vec3 diffuseDir = normalize(hitnormal + RandomUnitVector(rngState));
-        vec3 specularDir = reflect(duplicateRay.direction, hitnormal);
-        specularDir = normalize(mix(specularDir, diffuseDir, hitMaterial.roughness * hitMaterial.roughness));
-        duplicateRay.direction = mix(diffuseDir, specularDir, doSpecular);*/
 
         
         
@@ -561,12 +576,12 @@ void main()
     //vec3 hitpoint = vec3(0);
     //vec3 hitnormal = vec3(0);
     //bool raycastResult = raycast( ray.origin, ray.direction, hitMaterial, hitpoint, hitnormal );
-    //bool res = raycast
-
+    ////bool res = raycast
+//
     //vec3 color = vec3(0); ////rayTraceSample(ray);
     //if (raycastResult == true){
-    //    //color = vec3(length(hitpoint-ray.origin))/20; //DEPTH
-    //    color = hitnormal;
+    //    color = vec3(length(hitpoint-ray.origin))/20; //DEPTH
+    //    //color = hitnormal;
     //}
     vec3 color = PathTrace(ray);
     fragColor = vec4(color,1.0);//texture(u_geometry_texture, vec2(float(0+2.5)/u_geometry_pixel_count,0));//
