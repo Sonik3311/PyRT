@@ -5,14 +5,14 @@ GLversion = [4,6]
 resizable = false
 
 [APP]
-shaderPath = "programs"
+shaderPath = "../programs"
 
 [RT]
 samples     = 2
 reflections = 6
 accumframes = true
-skyboxpath  = "skyboxes/planet6.png"
-scenepath   = "scenes/scene.pyrt"
+skyboxpath  = "../skyboxes/planet6.png"
+scenepath   = "../scenes/scene.pyrt"
 
 [RTFX]
 exposure = 1

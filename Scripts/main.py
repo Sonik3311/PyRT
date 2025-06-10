@@ -14,7 +14,7 @@ from coloredText import bcolors as colors
 
 class Settings:
     TOMLParser = TOMLParser()
-    TOMLParser.loadConfig("settings.toml")
+    TOMLParser.loadConfig("../settings.toml")
 
     gl_version = TOMLParser.getValue("settings", "WINDOW/GLversion")
     title = TOMLParser.getValue("settings", "WINDOW/title")
@@ -238,7 +238,7 @@ class App(mglw.WindowConfig):
             #print(self.cameraPosition)
         
 
-    def render(self, time, delta_time):
+    def on_render(self, time, delta_time):
         self.update()
 
         # Render modernGL
@@ -263,30 +263,30 @@ class App(mglw.WindowConfig):
         self.frames = self.frames + 1 if self.settings.rt_accumframes else 0
 
 
-    def mouse_position_event(self, x, y, dx, dy):
+    def on_mouse_position_event(self, x, y, dx, dy):
         self.gui.imgui.mouse_position_event(x, y, dx, dy)
 
-    def mouse_drag_event(self, x, y, dx, dy):
+    def on_mouse_drag_event(self, x, y, dx, dy):
         self.gui.imgui.mouse_drag_event(x, y, dx, dy)
 
         if self.allowCameraTranslation:
             self.cameraRotation[0] += dx * 0.0174533/9
             self.cameraRotation[1] += dy * 0.0174533/9
 
-    def mouse_scroll_event(self, x_offset, y_offset):
+    def on_mouse_scroll_event(self, x_offset, y_offset):
         self.gui.imgui.mouse_scroll_event(x_offset, y_offset)
 
-    def mouse_press_event(self, x, y, button):
+    def on_mouse_press_event(self, x, y, button):
         self.gui.imgui.mouse_press_event(x, y, button)
         if button == 3:
             self.allowCameraTranslation = True
 
-    def mouse_release_event(self, x: int, y: int, button: int):
+    def on_mouse_release_event(self, x: int, y: int, button: int):
         self.gui.imgui.mouse_release_event(x, y, button)
         if button == 3:
             self.allowCameraTranslation = False
 
-    def key_event(self, key, action, modifiers):
+    def on_key_event(self, key, action, modifiers):
         if action == self.wnd.keys.ACTION_PRESS:
             
             if key == self.wnd.keys.SPACE: self.tempDir[2] = 1
@@ -307,7 +307,7 @@ class App(mglw.WindowConfig):
             if key == self.wnd.keys.W or key == self.wnd.keys.S:    self.tempDir[0] = 0
             if key == self.wnd.keys.D or key == self.wnd.keys.A:    self.tempDir[1] = 0
        
-    def unicode_char_entered(self, char):
+    def on_unicode_char_entered(self, char):
         self.gui.imgui.unicode_char_entered(char)
 
 
