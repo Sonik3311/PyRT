@@ -19,7 +19,7 @@ Aka, this program needs a lot of stuff to be implemented, but I can't be bothere
 - [x] Custom domain-specific language for describing scenes.
 - [x] Simple material system.
 - [x] Object grouping.
-- [x] IK positioning schema.
+- [x] FK positioning schema.
 - [x] Configurable skybox.
 
 ## Launching/Requirements
